@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Pallet Stacking Studio</title>
+<link rel="stylesheet" href="palletizer.css"/>
+<!-- Third-party libraries (loaded from CDN; the app still runs offline,
+     only the 3D view and PDF/Excel export need these). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<header class="app">
+  <h1>📦 Pallet Stacking Studio</h1>
+  <span class="sub">box → pallet layout · rotatable 3D · exportable report</span>
+  <span class="spacer"></span>
+  <button id="btnLoad" class="ghost" title="Load a saved JSON configuration">⤓ Load JSON</button>
+  <button id="btnSave" class="ghost" title="Save current inputs as JSON (compatible with the Python CLI)">⤒ Save JSON</button>
+  <button id="btnCompute" class="primary" title="Recalculate the stacking layout">▶ Compute</button>
+  <input type="file" id="fileInput" accept="application/json,.json" style="display:none"/>
+</header>
+
+<div class="layout">
+  <!-- ============================ INPUTS ============================ -->
+  <aside class="sidebar">
+    <div class="card">
+      <h2>Box (carton)</h2>
+      <div class="field"><label>Name</label><input type="text" id="box_name" value="Carton A"/></div>
+      <div class="grid3" style="margin-top:8px">
+        <div class="field"><label>Length L (mm)</label><input type="number" id="box_length" value="400" min="1" step="1"/></div>
+        <div class="field"><label>Width W (mm)</label><input type="number" id="box_width" value="300" min="1" step="1"/></div>
+        <div class="field"><label>Height H (mm)</label><input type="number" id="box_height" value="250" min="1" step="1"/></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label>Gross weight (kg)</label><input type="number" id="box_weight" value="8.5" min="0" step="0.1"/></div>
+    </div>
+
+    <div class="card">
+      <h2>Pallet</h2>
+      <div class="field"><label>Name</label><input type="text" id="pallet_name" value="EUR pallet (1200x800)"/></div>
+      <div class="grid2" style="margin-top:8px">
+        <div class="field"><label>Length (mm)</label><input type="number" id="pallet_length" value="1200" min="1" step="1"/></div>
+        <div class="field"><label>Width (mm)</label><input type="number" id="pallet_width" value="800" min="1" step="1"/></div>
+        <div class="field"><label>Deck height (mm)</label><input type="number" id="pallet_deck" value="150" min="0" step="1"/></div>
+        <div class="field"><label>Load capacity (kg)</label><input type="number" id="pallet_cap" value="700" min="0" step="1"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Limits</h2>
+      <div class="field"><label>Max assembled height incl. deck (mm)</label><input type="number" id="max_height" value="1800" min="1" step="1"/></div>
+    </div>
+
+    <div class="card">
+      <h2>Acceptable box orientations</h2>
+      <div class="check">
+        <input type="checkbox" id="rot_z" checked/>
+        <span class="lbl">Rotate footprint 90° (Z axis)
+          <small>swap L↔W, box stays upright — almost always allowed</small></span>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="rot_x"/>
+        <span class="lbl">Tip onto side face (X axis)
+          <small>swap W↔H</small></span>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="rot_y"/>
+        <span class="lbl">Tip onto end face (Y axis)
+          <small>swap L↔H</small></span>
+      </div>
+    </div>
+
+    <details class="card" id="addCard">
+      <summary>Additional elements (optional)</summary>
+      <div style="margin-top:10px">
+        <div class="check">
+          <input type="checkbox" id="add_enabled"/>
+          <span class="lbl">Enable additional elements
+            <small>spacers, corner posts, stretch film — placeholder feature, expandable later</small></span>
+        </div>
+        <div class="check">
+          <input type="checkbox" id="add_spacers"/>
+          <span class="lbl">Spacer sheets between layers</span>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Spacer thickness (mm)</label><input type="number" id="spacer_thickness" value="5" min="0" step="0.5"/></div>
+          <div class="field"><label>Spacer weight (kg)</label><input type="number" id="spacer_weight" value="0.3" min="0" step="0.1"/></div>
+        </div>
+        <div class="check" style="margin-top:6px">
+          <input type="checkbox" id="add_corner"/>
+          <span class="lbl">Corner posts</span>
+        </div>
+        <div class="field"><label>Corner posts total weight (kg)</label><input type="number" id="corner_weight" value="0" min="0" step="0.1"/></div>
+        <div class="check" style="margin-top:6px">
+          <input type="checkbox" id="add_film"/>
+          <span class="lbl">Stretch film</span>
+        </div>
+        <div class="field"><label>Film weight (kg)</label><input type="number" id="film_weight" value="1.2" min="0" step="0.1"/></div>
+      </div>
+    </details>
+
+    <div class="row-btns">
+      <button id="btnExample" class="ghost">Reset example</button>
+      <button id="btnCompute2" class="primary">▶ Compute</button>
+    </div>
+    <p class="muted" style="font-size:11px; margin-top:12px">
+      Engine: grid + leftover-strip heuristic (homogeneous boxes), layer stacking limited by
+      max height and load capacity. Identical to the bundled Python CLI; JSON is interchangeable.
+    </p>
+  </aside>
+
+  <!-- ============================ RESULTS ============================ -->
+  <section class="main">
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button data-view="3d" class="active">3D</button>
+        <button data-view="top">Top</button>
+        <button data-view="side">Side</button>
+        <button data-view="table">Table</button>
+      </div>
+      <span class="spacer"></span>
+      <button id="btnPdf" class="ghost">⎙ PDF</button>
+      <button id="btnXlsx" class="ghost">▦ Excel</button>
+      <button id="btnPrint" class="ghost">🖶 Print</button>
+    </div>
+    <div class="libwarn" id="libwarn"></div>
+
+    <div class="banner" id="banner"></div>
+
+    <div class="stats" id="stats"><!-- populated --></div>
+
+    <div class="viewwrap" id="viewwrap">
+      <!-- 3D -->
+      <div class="view active" id="pane-3d">
+        <div class="viewbar">
+          <span class="hint">drag to rotate · scroll to zoom · right-drag to pan</span>
+          <span class="spacer" style="flex:1"></span>
+          <button id="btnAutorot" class="ghost" style="font-size:12px; padding:5px 8px">⟳ Auto-rotate</button>
+          <button id="btnReset" class="ghost" style="font-size:12px; padding:5px 8px">Reset view</button>
+        </div>
+        <div id="view3d"></div>
+      </div>
+      <!-- TOP -->
+      <div class="view2d" id="pane-top">
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px">
+          <label class="muted" style="font-size:12px">Layer:</label>
+          <select id="topLayer"></select>
+          <span class="muted" id="topInfo" style="font-size:12px"></span>
+        </div>
+        <canvas id="canvasTop" width="900" height="640"></canvas>
+      </div>
+      <!-- SIDE -->
+      <div class="view2d" id="pane-side">
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px">
+          <label class="muted" style="font-size:12px">Elevation:</label>
+          <select id="sideAxis">
+            <option value="length">Front (along length)</option>
+            <option value="width">Side (along width)</option>
+          </select>
+        </div>
+        <canvas id="canvasSide" width="900" height="640"></canvas>
+      </div>
+      <!-- TABLE -->
+      <div class="tablewrap" id="pane-table">
+        <table class="boxes" id="boxTable"></table>
+      </div>
+    </div>
+
+    <div class="legend" id="legend"></div>
+
+    <details class="recs" id="recs">
+      <summary>Recommendations<span class="reccount" id="recsCount"></span></summary>
+      <div id="recsBody">Run a calculation to see recommendations.</div>
+    </details>
+  </section>
+</div>
+
+<!-- hidden container used only for printing -->
+<div id="printArea"></div>
+
+<!-- application logic -->
+<script src="palletizer.js"></script>
+</body>
+</html>
