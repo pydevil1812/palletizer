@@ -5,7 +5,7 @@ const TABS = [
   { view: 'table', label: 'Table' },
 ];
 
-export function Toolbar({ activeTab, onTabChange, onExportPdf, onExportXlsx, onPrint, libWarning }) {
+export function Toolbar({ activeTab, onTabChange, libWarning }) {
   return (
     <>
       <div className="toolbar">
@@ -17,15 +17,6 @@ export function Toolbar({ activeTab, onTabChange, onExportPdf, onExportXlsx, onP
           ))}
         </div>
         <span className="spacer"></span>
-        <button className="ghost" onClick={onExportPdf}>
-          ⎙ PDF
-        </button>
-        <button className="ghost" onClick={onExportXlsx}>
-          ▦ Excel
-        </button>
-        <button className="ghost" onClick={onPrint}>
-          🖶 Print
-        </button>
       </div>
       <div className="libwarn" style={{ display: libWarning ? 'block' : 'none' }}>
         {libWarning}

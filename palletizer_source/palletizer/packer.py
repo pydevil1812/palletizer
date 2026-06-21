@@ -97,13 +97,18 @@ def stack_layers(config: StackingConfig) -> StackingResult:
     layers: List[LayerResult] = []
     layer_idx = 0
     max_iterations = 1000  # safety guard against pathological inputs
+    limiting = "pattern"
 
     while layer_idx < max_iterations:
         spacer_h = _layer_height_budget(layer_idx, additional)
         spacer_w = _layer_weight_budget(layer_idx, additional)
         remaining_h = config.max_stack_height - z_cursor - spacer_h
         remaining_w = pallet.load_capacity - weight_used - spacer_w
-        if remaining_h <= 0 or remaining_w <= 0:
+        if remaining_h <= 0:
+            limiting = "height"
+            break
+        if remaining_w <= 0:
+            limiting = "weight"
             break
 
         best = None
@@ -128,6 +133,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
                 best = {"orient": orient, "rects": rects, "count": count, "weight": layer_weight}
 
         if not best or best["count"] == 0:
+            limiting = "pattern" if layer_idx == 0 else "height"
             break
 
         z_cursor += spacer_h
@@ -146,11 +152,11 @@ def stack_layers(config: StackingConfig) -> StackingResult:
         weight_used += best["weight"]
         layer_idx += 1
 
-    return _finalize(config, layers, z_cursor, weight_used)
+    return _finalize(config, layers, z_cursor, weight_used, limiting)
 
 
 def _finalize(config: StackingConfig, layers: List[LayerResult],
-              z_cursor: float, weight_used: float) -> StackingResult:
+              z_cursor: float, weight_used: float, limiting: str = "pattern") -> StackingResult:
     box, pallet, additional = config.box, config.pallet, config.additional
 
     placed_boxes: List[PlacedBox] = []
@@ -216,6 +222,7 @@ def _finalize(config: StackingConfig, layers: List[LayerResult],
         recommendations=recommendations,
         additional_weight=additional_weight,
         additional_height=additional_height,
+        limiting=limiting,
     )
 
 

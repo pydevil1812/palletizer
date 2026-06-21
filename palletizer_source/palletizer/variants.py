@@ -44,28 +44,36 @@ def _build_layers(config: StackingConfig,
     weight = 0.0
     layers: List[LayerResult] = []
     idx = 0
+    limiting = "pattern"
     while idx < 1000:
         spacer_h = _layer_height_budget(idx, additional)
         spacer_w = _layer_weight_budget(idx, additional)
         remaining_h = config.max_stack_height - z - spacer_h
         remaining_w = pallet.load_capacity - weight - spacer_w
-        if remaining_h <= 0 or remaining_w <= 0:
+        if remaining_h <= 0:
+            limiting = "height"
+            break
+        if remaining_w <= 0:
+            limiting = "weight"
             break
 
         orient = orient_for_layer(idx)
         if orient is None or orient["dz"] <= 0 or orient["dz"] > remaining_h:
+            limiting = "pattern" if idx == 0 else "height"
             break
 
         rects = pack_rectangle(pallet.length, pallet.width,
                                orient["dx"], orient["dy"], allow_swap)
         count = len(rects)
         if count == 0:
+            limiting = "pattern" if idx == 0 else "height"
             break
 
         layer_weight = count * box.weight
         if layer_weight > remaining_w:
             max_by_weight = int(remaining_w // box.weight) if box.weight > 0 else count
             if max_by_weight <= 0:
+                limiting = "weight"
                 break
             rects = rects[:max_by_weight]
             count = max_by_weight
@@ -82,7 +90,7 @@ def _build_layers(config: StackingConfig,
         weight += layer_weight
         idx += 1
 
-    return _finalize(config, layers, z, weight)
+    return _finalize(config, layers, z, weight, limiting)
 
 
 def _signature(result: StackingResult):

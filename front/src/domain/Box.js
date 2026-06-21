@@ -6,8 +6,4 @@ export class Box {
     this.height = height;
     this.weight = weight;
   }
-
-  get volume() {
-    return this.length * this.width * this.height;
-  }
 }

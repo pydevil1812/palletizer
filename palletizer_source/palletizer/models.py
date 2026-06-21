@@ -160,6 +160,7 @@ class StackingResult:
     recommendations: List[str]
     additional_weight: float = 0.0
     additional_height: float = 0.0
+    limiting: str = "pattern"  # "height" | "weight" | "pattern" — why stacking stopped
 
 
 # ---------------------------------------------------------------------------
