@@ -14,10 +14,11 @@ import sqlite3
 from datetime import datetime
 from typing import Dict, List, Optional
 
-# Database lives at the palletizer_source/ root (one level above this package)
-# so it sits next to the source tree and survives between runs.
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                       "palletizer_history.db")
+# Default: palletizer_source/palletizer_history.db (next to server.py).
+# Override by setting DB_PATH in the root .env file.
+_default_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "palletizer_history.db")
+DB_PATH = os.getenv("DB_PATH") or _default_db
 
 
 def _connect(db_path: str = DB_PATH) -> sqlite3.Connection:

@@ -1,0 +1,6 @@
+.env
+front/node_modules/
+palletizer_source/.deps_installed
+palletizer_source/palletizer_history.db
+__pycache__/
+*.pyc

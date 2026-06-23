@@ -14,10 +14,18 @@ from __future__ import annotations
 import importlib.util
 import os
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from palletizer.api import compute_variants
+
+# Load .env from the project root (one level above palletizer_source/)
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
+
+API_HOST  = os.getenv("API_HOST",  "127.0.0.1")
+API_PORT  = int(os.getenv("API_PORT",  "5000"))
+API_DEBUG = os.getenv("API_DEBUG", "true").lower() == "true"
 
 # `palletizer/history.py` only needs the stdlib (json/os/sqlite3/datetime),
 # but `import palletizer.history` would run `palletizer/__init__.py` first,
@@ -86,4 +94,4 @@ def compute():
 
 if __name__ == "__main__":
     history.init_db()
-    app.run(port=5000, debug=True)
+    app.run(host=API_HOST, port=API_PORT, debug=API_DEBUG)

@@ -5,6 +5,18 @@ rem its own window. Close those windows to stop the site.
 
 set "ROOT=%~dp0"
 
+rem Defaults (mirrors .env.example)
+set "API_HOST=127.0.0.1"
+set "API_PORT=5000"
+set "DEV_PORT=5173"
+
+rem Override defaults with values from .env (skip comment/blank lines)
+if exist "%ROOT%.env" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%ROOT%.env") do (
+        if not "%%A"=="" if not "%%A"==" " set "%%A=%%B"
+    )
+)
+
 if not exist "%ROOT%palletizer_source\.deps_installed" (
     echo Installing backend dependencies...
     pip install -r "%ROOT%palletizer_source\requirements-server.txt"
@@ -31,6 +43,6 @@ start "Pallet Web App (frontend)" cmd /k "cd /d "%ROOT%front" && npm run dev"
 
 echo.
 echo Pallet Stacking Studio is starting in two new windows:
-echo   API:  http://127.0.0.1:5000
-echo   Site: http://localhost:5173
+echo   API:  http://%API_HOST%:%API_PORT%
+echo   Site: http://localhost:%DEV_PORT%
 echo Close those windows (or Ctrl+C in each) to stop the site.
