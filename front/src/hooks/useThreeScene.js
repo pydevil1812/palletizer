@@ -7,23 +7,24 @@ import { ThreeSceneController } from '../services/ThreeSceneController.js';
  * (build, resize, resetView, autorotate toggle, PNG capture) without
  * leaking Three.js objects into React state.
  */
-export function useThreeScene(hostRef) {
+export function useThreeScene(hostEl) {
   const controllerRef = useRef(null);
   const lastResultRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [autorotate, setAutorotate] = useState(false);
 
   useEffect(() => {
-    if (!hostRef.current) return undefined;
-    const controller = new ThreeSceneController(hostRef.current);
+    if (!hostEl) return undefined;
+    const controller = new ThreeSceneController(hostEl);
     const ok = controller.init();
     controllerRef.current = controller;
     setReady(ok);
     return () => {
       controller.dispose();
       controllerRef.current = null;
+      setReady(false);
     };
-  }, [hostRef]);
+  }, [hostEl]);
 
   const build = useCallback((result) => {
     lastResultRef.current = result;

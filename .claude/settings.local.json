@@ -27,7 +27,12 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4173/)",
       "Bash(rm -f prod_check.png)",
       "Bash(pkill -f \"vite\")",
-      "Bash(pkill -f \"node.*preview\")"
+      "Bash(pkill -f \"node.*preview\")",
+      "Bash(python server.py)",
+      "Bash(curl -s -X POST http://127.0.0.1:5000/api/compute -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(dir *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\ironm\\\\Desktop\\\\palletization\" -Recurse -Directory | Where-Object { $_.Name -ne \"node_modules\" } | Select-Object -First 50 FullName)",
+      "Bash(python -c ' *)"
     ]
   }
 }

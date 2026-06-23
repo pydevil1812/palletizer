@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { SettingsPopover } from './SettingsPopover.jsx';
-import { VariantPicker } from './VariantPicker.jsx';
 
 export function Header({
   onLoad,
@@ -12,10 +11,11 @@ export function Header({
   onOpenHistory,
   theme,
   onToggleTheme,
-  variants,
-  variantIndex,
-  onSelectVariant,
   isComputing,
+  username,
+  isAdmin,
+  onLogout,
+  onOpenAdmin,
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const anchorRef = useRef(null);
@@ -62,7 +62,17 @@ export function Header({
       <h1>📦 Pallet Stacking Studio</h1>
       <span className="sub">box → pallet layout · rotatable 3D · exportable report</span>
       <span className="spacer"></span>
-      <VariantPicker variants={variants} variantIndex={variantIndex} onSelect={onSelectVariant} />
+      <div className="header-user">
+        <span className="header-username muted">{username}</span>
+        {isAdmin && (
+          <button className="ghost" onClick={onOpenAdmin} title="Administration panel">
+            Admin
+          </button>
+        )}
+        <button className="ghost" onClick={onLogout} title="Sign out">
+          Sign Out
+        </button>
+      </div>
       <button
         className="primary"
         title="Recalculate the stacking layout"

@@ -1,24 +1,17 @@
-/**
- * Fetch wrapper for the pallet-stacking compute backend
- * (palletizer_source/server.py, proxied at /api/compute by Vite in dev).
- * All packing/fill/recommendation math runs server-side; this just ships the
- * config out and the resulting variants back. Same error-wrapping pattern as
- * HistoryApiService.
- */
+import { authHeaders } from './AuthService.js';
+
 const URL = '/api/compute';
 
 export class ComputeApiService {
-  /**
-   * Returns `{ variants }` on success. On a 400 (validation failure) throws
-   * a ValidationError carrying the server's `errors` array so callers can
-   * tell that apart from a network/server failure.
-   */
   static async compute(exportJson) {
     let res;
     try {
       res = await fetch(URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+        },
         body: JSON.stringify(exportJson),
       });
     } catch (err) {

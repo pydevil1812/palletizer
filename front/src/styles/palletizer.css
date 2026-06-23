@@ -197,6 +197,68 @@ table.boxes tbody tr:hover{background:#1a2533}
 .variant-card-desc{font-size:11px; margin-bottom:4px}
 .variant-card-stats{font-size:11px}
 
+/* ── Auth (login page) ──────────────────────────────────────────────────── */
+.auth-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:var(--bg); padding:24px;
+}
+.auth-box{
+  width:min(420px,100%); background:var(--panel); border:1px solid var(--line);
+  border-radius:14px; padding:32px 28px; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; align-items:center;
+}
+.auth-logo{font-size:40px; margin-bottom:6px}
+.auth-title{font-size:18px; font-weight:700; margin:0 0 4px; text-align:center}
+.auth-sub{font-size:12px; text-align:center; margin:0 0 20px}
+.auth-tabs{
+  display:flex; gap:4px; background:var(--panel2); border:1px solid var(--line);
+  border-radius:9px; padding:3px; margin-bottom:18px; width:100%;
+}
+.auth-tabs button{
+  flex:1; background:transparent; border:none; padding:6px 12px; border-radius:6px;
+  color:var(--muted); font-weight:500;
+}
+.auth-tabs button.active{background:var(--accent); color:#06182c; font-weight:650}
+.auth-form{width:100%}
+.auth-submit{display:block; width:100%; margin-top:18px; padding:9px}
+
+/* ── Header user area ────────────────────────────────────────────────────── */
+.header-user{display:flex; align-items:center; gap:8px}
+.header-username{font-size:12px; white-space:nowrap}
+
+/* ── Admin page ─────────────────────────────────────────────────────────── */
+.admin-page{
+  display:flex; flex-direction:column; height:100%; background:var(--bg);
+  color:var(--text);
+}
+.admin-topbar{
+  display:flex; align-items:center; gap:14px; padding:8px 16px;
+  background:var(--panel); border-bottom:1px solid var(--line);
+}
+.admin-heading{font-size:15px; margin:0; flex:1}
+.admin-tabs-bar{
+  display:flex; gap:4px; padding:10px 16px; background:var(--panel2);
+  border-bottom:1px solid var(--line);
+}
+.admin-tab{
+  background:transparent; border:1px solid transparent; padding:5px 14px;
+  border-radius:7px; color:var(--muted);
+}
+.admin-tab.active{background:var(--accent); border-color:var(--accent); color:#06182c; font-weight:650}
+.admin-content{flex:1; overflow:auto; padding:16px}
+.admin-table-wrap{overflow-x:auto}
+.admin-row-actions{display:flex; gap:6px; flex-wrap:wrap}
+.admin-pw-row{display:flex; gap:8px; align-items:center}
+.admin-pw-row input{
+  background:var(--inputbg); border:1px solid var(--line); color:var(--text);
+  border-radius:6px; padding:6px 8px; font:inherit;
+}
+.role-badge{
+  display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;
+  background:var(--chip); border:1px solid var(--line);
+}
+.role-badge.admin{color:var(--accent); border-color:var(--accent)}
+
 /* print */
 #printArea{display:none}
 @media print{

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePalletConfig } from './hooks/usePalletConfig.js';
 import { useStackResult } from './hooks/useStackResult.js';
 import { useThreeScene } from './hooks/useThreeScene.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useTheme } from './hooks/useTheme.js';
+import { useAuth } from './hooks/useAuth.js';
 import { CanvasTopRenderer } from './services/CanvasTopRenderer.js';
 import { CanvasSideRenderer } from './services/CanvasSideRenderer.js';
 import { ExportService } from './services/ExportService.js';
@@ -13,38 +14,43 @@ import { HistoryModal } from './components/Header/HistoryModal.jsx';
 import { Sidebar } from './components/Sidebar/Sidebar.jsx';
 import { MainPanel } from './components/Main/MainPanel.jsx';
 import { RecommendationsPanel } from './components/Main/RecommendationsPanel.jsx';
+import { LoginPage } from './components/Auth/LoginPage.jsx';
+import { AdminPage } from './components/Admin/AdminPage.jsx';
 import './styles/palletizer.css';
 
 export default function App() {
+  const auth = useAuth();
   const config = usePalletConfig();
   const stack = useStackResult();
   const history = useHistory();
   const { theme, toggleTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState('3d');
-  const [leftPanel, setLeftPanel] = useState('params'); // 'params' | 'recs'
+  const [leftPanel, setLeftPanel] = useState('params');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [topLayerIndex, setTopLayerIndex] = useState(0);
   const [sideAxis, setSideAxis] = useState('length');
   const [topInfo, setTopInfo] = useState(null);
   const [additionalOpenSignal, setAdditionalOpenSignal] = useState(0);
 
-  const hostRef = useRef(null);
+  // Callback ref: React calls this with the DOM element when it mounts/unmounts.
+  // Feeding a state variable to useThreeScene means its effect re-runs whenever
+  // the 3D host element appears in the DOM (e.g. after login).
+  const [hostEl, setHostEl] = useState(null);
+  const hostRef = useCallback((el) => setHostEl(el), []);
+
   const canvasTopRef = useRef(null);
   const canvasSideRef = useRef(null);
   const printAreaRef = useRef(null);
 
-  const threeScene = useThreeScene(hostRef);
+  const threeScene = useThreeScene(hostEl);
   const topRenderer = useMemo(() => new CanvasTopRenderer(), []);
   const sideRenderer = useMemo(() => new CanvasSideRenderer(), []);
 
-  // Computes the layout and, unless told otherwise, records the query in the
-  // history backend — mirrors the desktop app's compute(record=True) default
-  // (record=False is used when reloading a config from history, so reopening
-  // an old query doesn't keep re-appending itself).
   const runCompute = async (rawState, { record = true } = {}) => {
     const variants = await stack.compute(rawState);
-    if (record && variants) {
+    if (record && variants && auth.session) {
       const result = variants[0].result;
       const exportJson = ConfigSerializer.toExportJSON(config.toPalletConfig(rawState));
       history.save({
@@ -62,23 +68,18 @@ export default function App() {
     return variants;
   };
 
-  // Initial render: compute the default example layout immediately, like the
-  // original app did on DOMContentLoaded. Not recorded, matching the desktop
-  // app's startup compute(record=False).
+  // Run the default example layout once the user is authenticated.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    runCompute(config.state, { record: false });
-  }, []);
+    if (auth.isLoggedIn) {
+      runCompute(config.state, { record: false });
+    }
+  }, [auth.isLoggedIn]);
 
-  // A fresh result always defaults the Top view to the topmost layer.
   useEffect(() => {
     if (stack.result) setTopLayerIndex(stack.result.layers.length ? stack.result.layers.length - 1 : 0);
   }, [stack.result]);
 
-  // All views are kept in sync on every result change, not just the active
-  // tab — matches the original, which redraws everything on each compute()
-  // so exports always capture an up-to-date snapshot regardless of which
-  // tab is currently visible.
   useEffect(() => {
     if (!canvasTopRef.current) return;
     setTopInfo(topRenderer.draw(canvasTopRef.current, stack.result, topLayerIndex));
@@ -93,8 +94,6 @@ export default function App() {
     if (threeScene.ready) threeScene.build(stack.result);
   }, [stack.result, threeScene.ready, threeScene]);
 
-  // The 3D pane is display:none while another tab is active, so its
-  // container has stale dimensions until it becomes visible again.
   useEffect(() => {
     if (activeTab !== '3d') return undefined;
     const t = setTimeout(() => threeScene.resize(), 30);
@@ -131,26 +130,32 @@ export default function App() {
   });
 
   const handleExportPdf = () => {
-    if (!stack.result) {
-      alert('Run a calculation first.');
-      return;
-    }
+    if (!stack.result) { alert('Run a calculation first.'); return; }
     ExportService.exportPdf(stack.result, collectImages());
   };
   const handleExportXlsx = () => {
-    if (!stack.result) {
-      alert('Run a calculation first.');
-      return;
-    }
+    if (!stack.result) { alert('Run a calculation first.'); return; }
     ExportService.exportXlsx(stack.result);
   };
   const handlePrint = () => {
-    if (!stack.result) {
-      alert('Run a calculation first.');
-      return;
-    }
+    if (!stack.result) { alert('Run a calculation first.'); return; }
     ExportService.print(printAreaRef.current, stack.result, collectImages());
   };
+
+  // ── Auth gate ──────────────────────────────────────────────────────────────
+  if (!auth.isLoggedIn) {
+    return <LoginPage onLogin={auth.login} onRegister={auth.register} />;
+  }
+
+  // ── Admin panel ────────────────────────────────────────────────────────────
+  if (adminOpen) {
+    return (
+      <AdminPage
+        currentUsername={auth.session.username}
+        onBack={() => setAdminOpen(false)}
+      />
+    );
+  }
 
   let bannerType = null;
   let bannerMessage = '';
@@ -178,10 +183,11 @@ export default function App() {
         onOpenHistory={handleOpenHistory}
         theme={theme}
         onToggleTheme={toggleTheme}
-        variants={stack.variants}
-        variantIndex={stack.variantIndex}
-        onSelectVariant={stack.selectVariant}
         isComputing={stack.isComputing}
+        username={auth.session.username}
+        isAdmin={auth.isAdmin}
+        onLogout={auth.logout}
+        onOpenAdmin={() => setAdminOpen(true)}
       />
       <div className="layout">
         {leftPanel === 'params' ? (

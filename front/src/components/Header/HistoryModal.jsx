@@ -49,6 +49,7 @@ export function HistoryModal({
               <thead>
                 <tr>
                   <th className="l">Date</th>
+                  <th className="l">User</th>
                   <th className="l">Label</th>
                   <th>Boxes</th>
                   <th>Layers</th>
@@ -60,8 +61,13 @@ export function HistoryModal({
               </thead>
               <tbody>
                 {entries.map((row) => (
-                  <tr key={row.id} className={row.id === selectedId ? 'selected' : ''} onClick={() => onSelect(row.id)}>
+                  <tr
+                    key={row.id}
+                    className={row.id === selectedId ? 'selected' : ''}
+                    onClick={() => onSelect(row.id)}
+                  >
                     <td className="l">{row.created_at}</td>
+                    <td className="l">{row.username || '–'}</td>
                     <td className="l">{row.label}</td>
                     <td>{fmt(row.total_boxes)}</td>
                     <td>{fmt(row.layers)}</td>
