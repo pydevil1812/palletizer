@@ -13,6 +13,7 @@ export function HistoryModal({
   onOpenSelected,
   onClose,
   onRefresh,
+  isAdmin,
 }) {
   useEffect(() => {
     if (open) onRefresh();
@@ -56,7 +57,7 @@ export function HistoryModal({
                   <th>Fill</th>
                   <th>Height</th>
                   <th>Weight</th>
-                  <th></th>
+                  {isAdmin && <th></th>}
                 </tr>
               </thead>
               <tbody>
@@ -74,19 +75,21 @@ export function HistoryModal({
                     <td>{fmt(row.fill_pct, 0)}%</td>
                     <td>{fmt(row.height_mm, 0)}</td>
                     <td>{fmt(row.weight_kg, 0)}</td>
-                    <td>
-                      <button
-                        className="ghost row-delete"
-                        title="Delete this entry"
-                        aria-label="Delete this entry"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveOne(row.id);
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </td>
+                    {isAdmin && (
+                      <td>
+                        <button
+                          className="ghost row-delete"
+                          title="Delete this entry"
+                          aria-label="Delete this entry"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveOne(row.id);
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -95,9 +98,11 @@ export function HistoryModal({
         </div>
 
         <div className="history-actions">
-          <button className="ghost" onClick={handleClearAll}>
-            Delete history
-          </button>
+          {isAdmin && (
+            <button className="ghost" onClick={handleClearAll}>
+              Delete history
+            </button>
+          )}
           <button className="primary" disabled={selectedId == null} onClick={onOpenSelected}>
             Open
           </button>

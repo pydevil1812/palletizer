@@ -130,24 +130,6 @@ def me():
     return jsonify({'username': user['username'], 'role': user['role']})
 
 
-@app.post('/api/auth/register')
-def register():
-    body = request.get_json(force=True, silent=True) or {}
-    username = (body.get('username') or '').strip()
-    password = body.get('password') or ''
-    if not username or not password:
-        return jsonify({'error': 'Username and password required'}), 400
-    if len(username) < 3:
-        return jsonify({'error': 'Username must be at least 3 characters'}), 400
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters'}), 400
-    if username == ADMIN_USERNAME:
-        return jsonify({'error': 'Username not available'}), 409
-
-    user_id = history.create_user(username, password, role='user')
-    if user_id is None:
-        return jsonify({'error': 'Username already taken'}), 409
-    return jsonify({'id': user_id}), 201
 
 
 # ── Admin: users ──────────────────────────────────────────────────────────────
@@ -162,6 +144,26 @@ def admin_list_users():
         'created_at': 'built-in', 'builtin': True,
     })
     return jsonify(users)
+
+
+@app.post('/api/admin/users')
+@require_admin
+def admin_create_user():
+    body = request.get_json(force=True, silent=True) or {}
+    username = (body.get('username') or '').strip()
+    password = body.get('password') or ''
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    if len(username) < 3:
+        return jsonify({'error': 'Username must be at least 3 characters'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    if username == ADMIN_USERNAME:
+        return jsonify({'error': 'Username not available'}), 409
+    user_id = history.create_user(username, password, role='user')
+    if user_id is None:
+        return jsonify({'error': 'Username already taken'}), 409
+    return jsonify({'id': user_id}), 201
 
 
 @app.delete('/api/admin/users/<int:user_id>')
@@ -253,14 +255,14 @@ def save_history():
 
 
 @app.delete('/api/history/<int:query_id>')
-@require_auth
+@require_admin
 def delete_history(query_id):
     history.delete_query(query_id)
     return '', 204
 
 
 @app.delete('/api/history')
-@require_auth
+@require_admin
 def clear_history():
     history.clear_history()
     return '', 204

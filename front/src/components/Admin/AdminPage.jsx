@@ -25,6 +25,10 @@ export function AdminPage({ onBack, currentUsername }) {
   const [error, setError] = useState('');
   const [showPwForm, setShowPwForm] = useState(null);
   const [newPw, setNewPw] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newUserPw, setNewUserPw] = useState('');
+  const [createError, setCreateError] = useState('');
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -102,6 +106,22 @@ export function AdminPage({ onBack, currentUsername }) {
     }
   };
 
+  const createUser = async () => {
+    setCreateError('');
+    try {
+      await apiRequest('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ username: newUsername, password: newUserPw }),
+      });
+      setShowCreateForm(false);
+      setNewUsername('');
+      setNewUserPw('');
+      await loadUsers();
+    } catch (err) {
+      setCreateError(err.message);
+    }
+  };
+
   const clearAllHistory = async () => {
     if (!window.confirm('Delete ALL history? This cannot be undone.')) return;
     try {
@@ -149,6 +169,43 @@ export function AdminPage({ onBack, currentUsername }) {
 
         {/* ── Users ── */}
         {tab === 'users' && !loading && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <button
+                className="primary"
+                style={{ fontSize: 12, padding: '4px 12px' }}
+                onClick={() => { setShowCreateForm((v) => !v); setCreateError(''); }}
+              >
+                {showCreateForm ? 'Cancel' : '+ Create User'}
+              </button>
+            </div>
+            {showCreateForm && (
+              <div style={{ background: 'var(--panel2)', padding: '12px 16px', borderRadius: 6, marginBottom: 12 }}>
+                <strong style={{ fontSize: 13 }}>New user</strong>
+                {createError && (
+                  <div className="banner err" style={{ display: 'block', margin: '6px 0' }}>
+                    {createError}
+                  </div>
+                )}
+                <div className="admin-pw-row" style={{ marginTop: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="Username (min 3 chars)"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password (min 6 chars)"
+                    value={newUserPw}
+                    onChange={(e) => setNewUserPw(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button className="primary" onClick={createUser}>Create</button>
+                </div>
+              </div>
+            )}
           <div className="admin-table-wrap">
             <table className="boxes">
               <thead>
@@ -239,6 +296,7 @@ export function AdminPage({ onBack, currentUsername }) {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* ── History ── */}

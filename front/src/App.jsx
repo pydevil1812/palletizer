@@ -144,7 +144,7 @@ export default function App() {
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
   if (!auth.isLoggedIn) {
-    return <LoginPage onLogin={auth.login} onRegister={auth.register} />;
+    return <LoginPage onLogin={auth.login} />;
   }
 
   // ── Admin panel ────────────────────────────────────────────────────────────
@@ -236,6 +236,7 @@ export default function App() {
         onOpenSelected={handleOpenSelectedHistory}
         onClose={handleCloseHistory}
         onRefresh={history.refresh}
+        isAdmin={auth.isAdmin}
       />
     </>
   );
