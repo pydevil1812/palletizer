@@ -1,4 +1,4 @@
-import { authHeaders } from './AuthService.js';
+import { apiFetch } from './AuthService.js';
 
 const URL = '/api/compute';
 
@@ -6,12 +6,9 @@ export class ComputeApiService {
   static async compute(exportJson) {
     let res;
     try {
-      res = await fetch(URL, {
+      res = await apiFetch(URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders(),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exportJson),
       });
     } catch (err) {

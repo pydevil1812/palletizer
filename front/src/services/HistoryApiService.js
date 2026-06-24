@@ -1,15 +1,14 @@
-import { authHeaders } from './AuthService.js';
+import { apiFetch } from './AuthService.js';
 
 const BASE = '/api/history';
 
 async function request(path, options = {}) {
   let res;
   try {
-    res = await fetch(path, {
+    res = await apiFetch(path, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders(),
         ...(options.headers || {}),
       },
     });

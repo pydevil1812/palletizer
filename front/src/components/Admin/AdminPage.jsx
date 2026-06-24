@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { authHeaders } from '../../services/AuthService.js';
+import { apiFetch } from '../../services/AuthService.js';
 import { fmt } from '../../utils/format.js';
 
 async function apiRequest(url, options = {}) {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...authHeaders(),
       ...(options.headers || {}),
     },
   });

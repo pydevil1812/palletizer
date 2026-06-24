@@ -61,3 +61,19 @@ export function authHeaders() {
   const token = AuthService.getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+export async function apiFetch(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...authHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401) {
+    AuthService.clearSession();
+    window.location.reload();
+    throw new Error('Session expired. Please log in again.');
+  }
+  return res;
+}
