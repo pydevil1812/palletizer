@@ -2,6 +2,8 @@
 .claude/
 front/node_modules/
 palletizer_source/.deps_installed
-palletizer_source/palletizer_history.db
+*.db
+*.sqlite
+*.sqlite3
 __pycache__/
 *.pyc
