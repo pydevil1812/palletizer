@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function LoginPage({ onLogin }) {
+  const { t } = useLang();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,8 +25,8 @@ export function LoginPage({ onLogin }) {
     <div className="auth-overlay">
       <div className="auth-box">
         <div className="auth-logo">📦</div>
-        <h1 className="auth-title">Pallet Stacking Studio</h1>
-        <p className="auth-sub muted">box → pallet layout · rotatable 3D · exportable report</p>
+        <h1 className="auth-title">{t('login.title')}</h1>
+        <p className="auth-sub muted">{t('login.subtitle')}</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {error && (
@@ -33,7 +35,7 @@ export function LoginPage({ onLogin }) {
             </div>
           )}
           <div className="field">
-            <label htmlFor="auth-username">Username</label>
+            <label htmlFor="auth-username">{t('login.username')}</label>
             <input
               id="auth-username"
               type="text"
@@ -45,7 +47,7 @@ export function LoginPage({ onLogin }) {
             />
           </div>
           <div className="field" style={{ marginTop: 10 }}>
-            <label htmlFor="auth-password">Password</label>
+            <label htmlFor="auth-password">{t('login.password')}</label>
             <input
               id="auth-password"
               type="password"
@@ -60,7 +62,7 @@ export function LoginPage({ onLogin }) {
             className="primary auth-submit"
             disabled={loading}
           >
-            {loading ? '…' : 'Sign In'}
+            {loading ? t('login.signing') : t('login.signIn')}
           </button>
         </form>
       </div>

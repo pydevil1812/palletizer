@@ -1,12 +1,14 @@
 import { ColorService } from '../../services/ColorService.js';
 import { fmt } from '../../utils/format.js';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function Legend({ result }) {
+  const { t } = useLang();
   const layers = result?.layers ?? [];
   if (!layers.length) {
     return (
       <div className="legend">
-        <span className="muted">No layers</span>
+        <span className="muted">{t('legend.noLayers')}</span>
       </div>
     );
   }

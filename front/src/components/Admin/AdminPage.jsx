@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../services/AuthService.js';
 import { fmt } from '../../utils/format.js';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 async function apiRequest(url, options = {}) {
   const res = await apiFetch(url, {
@@ -17,6 +18,7 @@ async function apiRequest(url, options = {}) {
 }
 
 export function AdminPage({ onBack, currentUsername }) {
+  const { t } = useLang();
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [historyEntries, setHistoryEntries] = useState([]);
@@ -59,7 +61,7 @@ export function AdminPage({ onBack, currentUsername }) {
   }, [tab, loadUsers, loadHistory]);
 
   const deleteUser = async (id) => {
-    if (!window.confirm('Delete this user? Their history entries will remain.')) return;
+    if (!window.confirm(t('admin.confirmDeleteUser'))) return;
     try {
       await apiRequest(`/api/admin/users/${id}`, { method: 'DELETE' });
       await loadUsers();
@@ -84,7 +86,7 @@ export function AdminPage({ onBack, currentUsername }) {
 
   const toggleRole = async (user) => {
     const next = user.role === 'admin' ? 'user' : 'admin';
-    if (!window.confirm(`Change ${user.username}'s role to "${next}"?`)) return;
+    if (!window.confirm(t('admin.confirmRoleChange', { username: user.username, role: next }))) return;
     try {
       await apiRequest(`/api/admin/users/${user.id}/role`, {
         method: 'PUT',
@@ -122,7 +124,7 @@ export function AdminPage({ onBack, currentUsername }) {
   };
 
   const clearAllHistory = async () => {
-    if (!window.confirm('Delete ALL history? This cannot be undone.')) return;
+    if (!window.confirm(t('admin.confirmDeleteAllHistory'))) return;
     try {
       await apiRequest('/api/admin/history', { method: 'DELETE' });
       setHistoryEntries([]);
@@ -135,11 +137,11 @@ export function AdminPage({ onBack, currentUsername }) {
     <div className="admin-page">
       <div className="admin-topbar">
         <button className="ghost" onClick={onBack}>
-          ← Back to App
+          {t('admin.backToApp')}
         </button>
-        <h2 className="admin-heading">Administration</h2>
+        <h2 className="admin-heading">{t('admin.heading')}</h2>
         <span className="muted" style={{ fontSize: 12 }}>
-          Logged in as <strong>{currentUsername}</strong>
+          {t('admin.loggedAs')} <strong>{currentUsername}</strong>
         </span>
       </div>
 
@@ -148,13 +150,13 @@ export function AdminPage({ onBack, currentUsername }) {
           className={`admin-tab${tab === 'users' ? ' active' : ''}`}
           onClick={() => setTab('users')}
         >
-          Users
+          {t('admin.tabUsers')}
         </button>
         <button
           className={`admin-tab${tab === 'history' ? ' active' : ''}`}
           onClick={() => setTab('history')}
         >
-          Request History
+          {t('admin.tabHistory')}
         </button>
       </div>
 
@@ -164,7 +166,7 @@ export function AdminPage({ onBack, currentUsername }) {
             {error}
           </div>
         )}
-        {loading && <p className="muted">Loading…</p>}
+        {loading && <p className="muted">{t('admin.loading')}</p>}
 
         {/* ── Users ── */}
         {tab === 'users' && !loading && (
@@ -175,12 +177,12 @@ export function AdminPage({ onBack, currentUsername }) {
                 style={{ fontSize: 12, padding: '4px 12px' }}
                 onClick={() => { setShowCreateForm((v) => !v); setCreateError(''); }}
               >
-                {showCreateForm ? 'Cancel' : '+ Create User'}
+                {showCreateForm ? t('admin.cancel') : t('admin.createUser')}
               </button>
             </div>
             {showCreateForm && (
               <div style={{ background: 'var(--panel2)', padding: '12px 16px', borderRadius: 6, marginBottom: 12 }}>
-                <strong style={{ fontSize: 13 }}>New user</strong>
+                <strong style={{ fontSize: 13 }}>{t('admin.newUser')}</strong>
                 {createError && (
                   <div className="banner err" style={{ display: 'block', margin: '6px 0' }}>
                     {createError}
@@ -189,19 +191,19 @@ export function AdminPage({ onBack, currentUsername }) {
                 <div className="admin-pw-row" style={{ marginTop: 8 }}>
                   <input
                     type="text"
-                    placeholder="Username (min 3 chars)"
+                    placeholder={t('admin.usernamePlaceholder')}
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     style={{ flex: 1 }}
                   />
                   <input
                     type="password"
-                    placeholder="Password (min 6 chars)"
+                    placeholder={t('admin.passwordPlaceholder')}
                     value={newUserPw}
                     onChange={(e) => setNewUserPw(e.target.value)}
                     style={{ flex: 1 }}
                   />
-                  <button className="primary" onClick={createUser}>Create</button>
+                  <button className="primary" onClick={createUser}>{t('admin.create')}</button>
                 </div>
               </div>
             )}
@@ -209,11 +211,11 @@ export function AdminPage({ onBack, currentUsername }) {
             <table className="boxes">
               <thead>
                 <tr>
-                  <th className="l">ID</th>
-                  <th className="l">Username</th>
-                  <th className="l">Role</th>
-                  <th className="l">Created</th>
-                  <th className="l">Actions</th>
+                  <th className="l">{t('admin.colId')}</th>
+                  <th className="l">{t('admin.colUsername')}</th>
+                  <th className="l">{t('admin.colRole')}</th>
+                  <th className="l">{t('admin.colCreated')}</th>
+                  <th className="l">{t('admin.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,9 +230,9 @@ export function AdminPage({ onBack, currentUsername }) {
                       <td className="l">{u.created_at}</td>
                       <td className="l">
                         {u.builtin ? (
-                          <span className="muted" style={{ fontSize: 11 }}>built-in</span>
+                          <span className="muted" style={{ fontSize: 11 }}>{t('admin.builtin')}</span>
                         ) : u.username === currentUsername ? (
-                          <span className="muted" style={{ fontSize: 11 }}>you</span>
+                          <span className="muted" style={{ fontSize: 11 }}>{t('admin.you')}</span>
                         ) : (
                           <div className="admin-row-actions">
                             <button
@@ -241,21 +243,21 @@ export function AdminPage({ onBack, currentUsername }) {
                                 setNewPw('');
                               }}
                             >
-                              Password
+                              {t('admin.changePassword')}
                             </button>
                             <button
                               className="ghost"
                               style={{ fontSize: 11, padding: '3px 8px' }}
                               onClick={() => toggleRole(u)}
                             >
-                              → {u.role === 'admin' ? 'user' : 'admin'}
+                              {t('admin.makeRole', { role: u.role === 'admin' ? 'user' : 'admin' })}
                             </button>
                             <button
                               className="ghost"
                               style={{ fontSize: 11, padding: '3px 8px', color: 'var(--danger)' }}
                               onClick={() => deleteUser(u.id)}
                             >
-                              Delete
+                              {t('admin.delete')}
                             </button>
                           </div>
                         )}
@@ -267,19 +269,19 @@ export function AdminPage({ onBack, currentUsername }) {
                           <div className="admin-pw-row">
                             <input
                               type="password"
-                              placeholder="New password (min 6 chars)"
+                              placeholder={t('admin.newPasswordPlaceholder')}
                               value={newPw}
                               onChange={(e) => setNewPw(e.target.value)}
                               style={{ flex: 1 }}
                             />
                             <button className="primary" onClick={() => savePassword(u.id)}>
-                              Save
+                              {t('admin.save')}
                             </button>
                             <button
                               className="ghost"
                               onClick={() => { setShowPwForm(null); setNewPw(''); }}
                             >
-                              Cancel
+                              {t('admin.cancel')}
                             </button>
                           </div>
                         </td>
@@ -289,7 +291,7 @@ export function AdminPage({ onBack, currentUsername }) {
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="l muted">No users.</td>
+                    <td colSpan={5} className="l muted">{t('admin.noUsers')}</td>
                   </tr>
                 )}
               </tbody>
@@ -307,21 +309,21 @@ export function AdminPage({ onBack, currentUsername }) {
                 style={{ color: 'var(--danger)' }}
                 onClick={clearAllHistory}
               >
-                Delete All History
+                {t('admin.deleteAllHistory')}
               </button>
             </div>
             <div className="admin-table-wrap">
               <table className="boxes history-table">
                 <thead>
                   <tr>
-                    <th className="l">Date</th>
-                    <th className="l">User</th>
-                    <th className="l">Label</th>
-                    <th>Boxes</th>
-                    <th>Layers</th>
-                    <th>Fill</th>
-                    <th>Height</th>
-                    <th>Weight</th>
+                    <th className="l">{t('history.colDate')}</th>
+                    <th className="l">{t('history.colUser')}</th>
+                    <th className="l">{t('history.colLabel')}</th>
+                    <th>{t('history.colBoxes')}</th>
+                    <th>{t('history.colLayers')}</th>
+                    <th>{t('history.colFill')}</th>
+                    <th>{t('history.colHeight')}</th>
+                    <th>{t('history.colWeight')}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -339,7 +341,7 @@ export function AdminPage({ onBack, currentUsername }) {
                       <td>
                         <button
                           className="ghost row-delete"
-                          title="Delete this entry"
+                          title={t('history.deleteEntry')}
                           onClick={() => deleteHistoryEntry(row.id)}
                         >
                           ✕
@@ -349,7 +351,7 @@ export function AdminPage({ onBack, currentUsername }) {
                   ))}
                   {historyEntries.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="l muted">No history entries.</td>
+                      <td colSpan={9} className="l muted">{t('admin.noHistoryEntries')}</td>
                     </tr>
                   )}
                 </tbody>

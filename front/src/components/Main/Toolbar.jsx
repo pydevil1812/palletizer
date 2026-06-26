@@ -1,18 +1,22 @@
-const TABS = [
-  { view: '3d', label: '3D' },
-  { view: 'top', label: 'Top' },
-  { view: 'side', label: 'Side' },
-  { view: 'table', label: 'Table' },
-];
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function Toolbar({ activeTab, onTabChange, libWarning }) {
+  const { t } = useLang();
+
+  const TABS = [
+    { view: '3d', label: t('toolbar.tab3d') },
+    { view: 'top', label: t('toolbar.tabTop') },
+    { view: 'side', label: t('toolbar.tabSide') },
+    { view: 'table', label: t('toolbar.tabTable') },
+  ];
+
   return (
     <>
       <div className="toolbar">
         <div className="tabs">
-          {TABS.map((t) => (
-            <button key={t.view} className={activeTab === t.view ? 'active' : ''} onClick={() => onTabChange(t.view)}>
-              {t.label}
+          {TABS.map((tab) => (
+            <button key={tab.view} className={activeTab === tab.view ? 'active' : ''} onClick={() => onTabChange(tab.view)}>
+              {tab.label}
             </button>
           ))}
         </div>

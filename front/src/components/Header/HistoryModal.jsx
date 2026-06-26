@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { fmt } from '../../utils/format.js';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function HistoryModal({
   open,
@@ -15,6 +16,8 @@ export function HistoryModal({
   onRefresh,
   isAdmin,
 }) {
+  const { t } = useLang();
+
   useEffect(() => {
     if (open) onRefresh();
   }, [open, onRefresh]);
@@ -22,18 +25,18 @@ export function HistoryModal({
   if (!open) return null;
 
   const handleClearAll = () => {
-    if (window.confirm('Delete the entire query history? This cannot be undone.')) onClearAll();
+    if (window.confirm(t('history.confirmDeleteAll'))) onClearAll();
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" title="Close" aria-label="Close" onClick={onClose}>
+        <button className="modal-close" title={t('history.close')} aria-label={t('history.close')} onClick={onClose}>
           ✕
         </button>
-        <h2>Query history</h2>
+        <h2>{t('history.title')}</h2>
         <p className="muted" style={{ fontSize: 12, marginTop: -4 }}>
-          Click a row to select it, then Open to reload its parameters.
+          {t('history.hint')}
         </p>
 
         {error && (
@@ -43,20 +46,20 @@ export function HistoryModal({
         )}
 
         <div className="history-list">
-          {loading && <p className="muted">Loading…</p>}
-          {!loading && entries.length === 0 && !error && <p className="muted">No saved queries yet.</p>}
+          {loading && <p className="muted">{t('history.loading')}</p>}
+          {!loading && entries.length === 0 && !error && <p className="muted">{t('history.empty')}</p>}
           {!loading && entries.length > 0 && (
             <table className="boxes history-table">
               <thead>
                 <tr>
-                  <th className="l">Date</th>
-                  <th className="l">User</th>
-                  <th className="l">Label</th>
-                  <th>Boxes</th>
-                  <th>Layers</th>
-                  <th>Fill</th>
-                  <th>Height</th>
-                  <th>Weight</th>
+                  <th className="l">{t('history.colDate')}</th>
+                  <th className="l">{t('history.colUser')}</th>
+                  <th className="l">{t('history.colLabel')}</th>
+                  <th>{t('history.colBoxes')}</th>
+                  <th>{t('history.colLayers')}</th>
+                  <th>{t('history.colFill')}</th>
+                  <th>{t('history.colHeight')}</th>
+                  <th>{t('history.colWeight')}</th>
                   {isAdmin && <th></th>}
                 </tr>
               </thead>
@@ -79,8 +82,8 @@ export function HistoryModal({
                       <td>
                         <button
                           className="ghost row-delete"
-                          title="Delete this entry"
-                          aria-label="Delete this entry"
+                          title={t('history.deleteEntry')}
+                          aria-label={t('history.deleteEntry')}
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveOne(row.id);
@@ -100,11 +103,11 @@ export function HistoryModal({
         <div className="history-actions">
           {isAdmin && (
             <button className="ghost" onClick={handleClearAll}>
-              Delete history
+              {t('history.deleteHistory')}
             </button>
           )}
           <button className="primary" disabled={selectedId == null} onClick={onOpenSelected}>
-            Open
+            {t('history.open')}
           </button>
         </div>
       </div>

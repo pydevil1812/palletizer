@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SettingsPopover } from './SettingsPopover.jsx';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function Header({
   onLoad,
@@ -17,6 +18,7 @@ export function Header({
   onLogout,
   onOpenAdmin,
 }) {
+  const { t } = useLang();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const anchorRef = useRef(null);
 
@@ -34,8 +36,8 @@ export function Header({
       <div className="settingsAnchor" ref={anchorRef}>
         <button
           className="ghost iconbtn"
-          title="Settings"
-          aria-label="Settings"
+          title={t('header.settingsTitle')}
+          aria-label={t('header.settingsTitle')}
           onClick={() => setSettingsOpen((o) => !o)}
         >
           ⚙
@@ -59,27 +61,27 @@ export function Header({
           />
         )}
       </div>
-      <h1>📦 Pallet Stacking Studio</h1>
-      <span className="sub">box → pallet layout · rotatable 3D · exportable report</span>
+      <h1>📦 {t('header.title')}</h1>
+      <span className="sub">{t('header.subtitle')}</span>
       <span className="spacer"></span>
       <div className="header-user">
         <span className="header-username muted">{username}</span>
         {isAdmin && (
-          <button className="ghost" onClick={onOpenAdmin} title="Administration panel">
-            Admin
+          <button className="ghost" onClick={onOpenAdmin} title={t('header.adminTitle')}>
+            {t('header.admin')}
           </button>
         )}
-        <button className="ghost" onClick={onLogout} title="Sign out">
-          Sign Out
+        <button className="ghost" onClick={onLogout} title={t('header.signOutTitle')}>
+          {t('header.signOut')}
         </button>
       </div>
       <button
         className="primary"
-        title="Recalculate the stacking layout"
+        title={t('header.computeTitle')}
         onClick={onCompute}
         disabled={isComputing}
       >
-        {isComputing ? '… Computing' : '▶ Compute'}
+        {isComputing ? t('header.computing') : t('header.compute')}
       </button>
     </header>
   );

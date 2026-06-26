@@ -1,6 +1,8 @@
 import { fmt } from '../../../utils/format.js';
+import { useLang } from '../../../i18n/LangContext.jsx';
 
 export function TableView({ active, result }) {
+  const { t } = useLang();
   const placed = result?.placed ?? [];
   const boxWeight = result?.config?.box?.weight ?? 0;
 
@@ -10,14 +12,14 @@ export function TableView({ active, result }) {
         <thead>
           <tr>
             <th>#</th>
-            <th>Layer</th>
+            <th>{t('table.layer')}</th>
             <th>X</th>
             <th>Y</th>
             <th>Z</th>
             <th>Dim X</th>
             <th>Dim Y</th>
             <th>Dim Z</th>
-            <th className="l">Orientation</th>
+            <th className="l">{t('table.orientation')}</th>
             <th>kg</th>
           </tr>
         </thead>

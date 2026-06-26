@@ -5,6 +5,7 @@ import { useThreeScene } from './hooks/useThreeScene.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useAuth } from './hooks/useAuth.js';
+import { useLang } from './i18n/LangContext.jsx';
 import { CanvasTopRenderer } from './services/CanvasTopRenderer.js';
 import { CanvasSideRenderer } from './services/CanvasSideRenderer.js';
 import { ExportService } from './services/ExportService.js';
@@ -19,6 +20,7 @@ import { AdminPage } from './components/Admin/AdminPage.jsx';
 import './styles/palletizer.css';
 
 export default function App() {
+  const { t } = useLang();
   const auth = useAuth();
   const config = usePalletConfig();
   const stack = useStackResult();
@@ -130,15 +132,15 @@ export default function App() {
   });
 
   const handleExportPdf = () => {
-    if (!stack.result) { alert('Run a calculation first.'); return; }
+    if (!stack.result) { alert(t('app.runCalcFirst')); return; }
     ExportService.exportPdf(stack.result, collectImages());
   };
   const handleExportXlsx = () => {
-    if (!stack.result) { alert('Run a calculation first.'); return; }
+    if (!stack.result) { alert(t('app.runCalcFirst')); return; }
     ExportService.exportXlsx(stack.result);
   };
   const handlePrint = () => {
-    if (!stack.result) { alert('Run a calculation first.'); return; }
+    if (!stack.result) { alert(t('app.runCalcFirst')); return; }
     ExportService.print(printAreaRef.current, stack.result, collectImages());
   };
 
@@ -161,15 +163,15 @@ export default function App() {
   let bannerMessage = '';
   if (stack.errors.length) {
     bannerType = 'err';
-    bannerMessage = 'Please fix: ' + stack.errors.join('; ');
+    bannerMessage = t('app.fixErrors') + stack.errors.join('; ');
   } else if (stack.result && stack.result.totalBoxes === 0) {
     bannerType = 'warn';
-    bannerMessage = 'No boxes could be placed with these inputs. See recommendations below.';
+    bannerMessage = t('app.noBoxes');
   }
 
   const libWarning = threeScene.ready
     ? null
-    : '3D view unavailable (WebGL not supported). Top/Side views, table and Print still work.';
+    : t('app.noWebGL');
 
   return (
     <>

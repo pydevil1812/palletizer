@@ -3,8 +3,10 @@ import { PalletCard } from './PalletCard.jsx';
 import { LimitsCard } from './LimitsCard.jsx';
 import { OrientationsCard } from './OrientationsCard.jsx';
 import { AdditionalElementsCard } from './AdditionalElementsCard.jsx';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function Sidebar({ config, onResetExample, onCompute, additionalOpenSignal }) {
+  const { t } = useLang();
   const { state, setBoxField, setPalletField, setMaxStackHeight, setOrientationFlag, setAdditionalField } = config;
 
   return (
@@ -21,15 +23,14 @@ export function Sidebar({ config, onResetExample, onCompute, additionalOpenSigna
 
       <div className="row-btns">
         <button className="ghost" onClick={onResetExample}>
-          Reset example
+          {t('sidebar.resetExample')}
         </button>
         <button className="primary" onClick={onCompute}>
-          ▶ Compute
+          {t('sidebar.compute')}
         </button>
       </div>
       <p className="muted" style={{ fontSize: 11, marginTop: 12 }}>
-        Engine: grid + leftover-strip heuristic (homogeneous boxes), layer stacking limited by max height and load
-        capacity. Identical to the bundled Python CLI; JSON is interchangeable.
+        {t('sidebar.engineDesc')}
       </p>
     </aside>
   );

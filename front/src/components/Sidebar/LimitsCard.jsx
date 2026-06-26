@@ -1,11 +1,13 @@
 import { FormField } from '../common/FormField.jsx';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 export function LimitsCard({ maxStackHeight, onChange }) {
+  const { t } = useLang();
   return (
     <div className="card">
-      <h2>Limits</h2>
+      <h2>{t('limits.title')}</h2>
       <FormField
-        label="Max assembled height incl. deck (mm)"
+        label={t('limits.maxHeight')}
         type="number"
         min={1}
         step={1}
