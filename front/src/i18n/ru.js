@@ -19,6 +19,9 @@ export const ru = {
     saveJsonTitle: 'Сохранить параметры как JSON',
     couldNotReadJson: 'Ошибка чтения JSON: ',
     report: 'Отчёт',
+    exportPdf: 'Экспорт PDF',
+    exportXlsx: 'Экспорт Excel',
+    print: 'Печать',
     history: 'История',
     queryHistory: '🕘 История запросов',
     appearance: 'Оформление',
@@ -170,6 +173,9 @@ export const ru = {
   table: {
     layer: 'Слой',
     orientation: 'Ориентация',
+    dimX: 'Разм. X',
+    dimY: 'Разм. Y',
+    dimZ: 'Разм. Z',
   },
   legend: {
     noLayers: 'Нет слоёв',

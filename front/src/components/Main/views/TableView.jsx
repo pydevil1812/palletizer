@@ -16,9 +16,9 @@ export function TableView({ active, result }) {
             <th>X</th>
             <th>Y</th>
             <th>Z</th>
-            <th>Dim X</th>
-            <th>Dim Y</th>
-            <th>Dim Z</th>
+            <th>{t('table.dimX')}</th>
+            <th>{t('table.dimY')}</th>
+            <th>{t('table.dimZ')}</th>
             <th className="l">{t('table.orientation')}</th>
             <th>kg</th>
           </tr>

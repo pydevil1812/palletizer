@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: devPort,
       proxy: {
-        '/api': `http://127.0.0.1:${apiPort}`,
+        '/api': `http://${apiHost}:${apiPort}`,
       },
     },
   };

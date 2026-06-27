@@ -7,3 +7,4 @@ palletizer_source/.deps_installed
 *.sqlite3
 __pycache__/
 *.pyc
+*.docx

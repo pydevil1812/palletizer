@@ -19,6 +19,9 @@ export const en = {
     saveJsonTitle: 'Save current inputs as JSON',
     couldNotReadJson: 'Could not read JSON: ',
     report: 'Report',
+    exportPdf: 'Export PDF',
+    exportXlsx: 'Export Excel',
+    print: 'Print',
     history: 'History',
     queryHistory: '🕘 Query history',
     appearance: 'Appearance',
@@ -170,6 +173,9 @@ export const en = {
   table: {
     layer: 'Layer',
     orientation: 'Orientation',
+    dimX: 'Dim X',
+    dimY: 'Dim Y',
+    dimZ: 'Dim Z',
   },
   legend: {
     noLayers: 'No layers',

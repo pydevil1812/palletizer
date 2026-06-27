@@ -43,9 +43,9 @@ export function SettingsPopover({ onLoad, onSave, onExportPdf, onExportXlsx, onP
 
       <div className="popover-section">
         <h3>{t('settings.report')}</h3>
-        <button className="ghost" onClick={onExportPdf}>⎙ PDF</button>
-        <button className="ghost" onClick={onExportXlsx}>▦ Excel</button>
-        <button className="ghost" onClick={onPrint}>🖶 Print</button>
+        <button className="ghost" onClick={onExportPdf} title={t('settings.exportPdf')}>⎙ PDF</button>
+        <button className="ghost" onClick={onExportXlsx} title={t('settings.exportXlsx')}>▦ Excel</button>
+        <button className="ghost" onClick={onPrint} title={t('settings.print')}>🖶 {t('settings.print')}</button>
       </div>
 
       <div className="popover-section">
