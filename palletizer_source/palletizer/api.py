@@ -21,7 +21,9 @@ from .models import (
     StackingConfig,
     StackingResult,
 )
-from .variants import generate_variants
+from .packer import stack_layers
+# variants feature disabled — import kept for easy revert:
+# from .variants import generate_variants
 
 _LIMITING_LABELS = {
     "height": "height-limited",
@@ -210,16 +212,23 @@ def _serialize_result(result: StackingResult) -> Dict:
 def compute_variants(data: Dict) -> Dict:
     """Validates `data` (the request body) and, if valid, returns
     `{"variants": [...]}`. On validation failure returns `{"errors": [...]}`
-    instead — callers should map that to an HTTP 400."""
+    instead — callers should map that to an HTTP 400.
+
+    Variants feature is disabled: only the single auto layout is returned.
+    To re-enable, swap stack_layers call back to generate_variants.
+    """
     config = build_config(data)
     errors = validate_config(config)
     if errors:
         return {"errors": errors}
 
-    variants = generate_variants(config)
+    result = stack_layers(config)
     return {
         "variants": [
-            {"name": v["name"], "description": v["description"], "result": _serialize_result(v["result"])}
-            for v in variants
+            {
+                "name": "Maximum boxes (auto)",
+                "description": "Engine picks the best orientation per layer.",
+                "result": _serialize_result(result),
+            }
         ]
     }

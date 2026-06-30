@@ -33,7 +33,7 @@ class Box:
     height: float          # mm, the box's own Z dimension at rest
     weight: float          # kg, gross weight of one box
     name: str = "Box"
-    sku: Optional[str] = None
+    sku: Optional[str] = None   # just in case you need to add something later
 
     @property
     def volume(self) -> float:
