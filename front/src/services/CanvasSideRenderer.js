@@ -5,13 +5,13 @@ import { fmt } from '../utils/format.js';
 /** Draws the side elevation (all boxes projected onto one base axis + height) onto a 2D canvas. */
 export class CanvasSideRenderer {
   /** axis: 'length' | 'width' */
-  draw(canvas, result, axis) {
+  draw(canvas, result, axis, t) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!result || !result.layers.length) {
       ctx.fillStyle = '#5b6a7d';
       ctx.font = '14px system-ui';
-      ctx.fillText('No layout', 20, 30);
+      ctx.fillText(t('views.noLayout'), 20, 30);
       return;
     }
 
@@ -34,7 +34,7 @@ export class CanvasSideRenderer {
     ctx.setLineDash([]);
     ctx.fillStyle = '#e7a13a';
     ctx.font = '11px system-ui';
-    ctx.fillText(`max ${fmt(totalH)} mm`, ox, Y(totalH) - 4);
+    ctx.fillText(t('views.maxHeightLabel', { mm: fmt(totalH) }), ox, Y(totalH) - 4);
 
     ctx.fillStyle = '#2a2014';
     ctx.strokeStyle = '#6b5331';
@@ -61,12 +61,16 @@ export class CanvasSideRenderer {
 
     ctx.fillStyle = '#93a4b8';
     ctx.font = '12px system-ui';
-    ctx.fillText(`${axis === 'length' ? 'length ' : 'width '}${fmt(baseW)} mm`, ox, oy + 22);
+    ctx.fillText(
+      t('views.axisLabel', { axis: axis === 'length' ? t('views.lengthAxis') : t('views.widthAxis'), mm: fmt(baseW) }),
+      ox,
+      oy + 22
+    );
     ctx.save();
     ctx.translate(ox - 18, (Y(0) + Y(totalH)) / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillText('height (mm)', 0, 0);
+    ctx.fillText(t('views.heightAxisLabel'), 0, 0);
     ctx.restore();
     ctx.textAlign = 'left';
   }

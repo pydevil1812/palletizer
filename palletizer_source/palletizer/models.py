@@ -157,7 +157,7 @@ class StackingResult:
     volume_fill_pct: float
     height_utilization_pct: float
     weight_utilization_pct: float
-    recommendations: List[str]
+    recommendations: List[Dict]
     additional_weight: float = 0.0
     additional_height: float = 0.0
     limiting: str = "pattern"  # "height" | "weight" | "pattern" — why stacking stopped

@@ -1,4 +1,5 @@
 import { useLang } from '../../i18n/LangContext.jsx';
+import { formatRecommendation } from '../../i18n/messages.js';
 
 export function RecommendationsPanel({ result }) {
   const { t } = useLang();
@@ -13,7 +14,7 @@ export function RecommendationsPanel({ result }) {
         {recs && recs.length > 0 && (
           <ul className="recs-ul">
             {recs.map((r, i) => (
-              <li key={i}>{r}</li>
+              <li key={i}>{formatRecommendation(t, r)}</li>
             ))}
           </ul>
         )}

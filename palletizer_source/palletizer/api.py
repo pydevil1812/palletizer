@@ -83,30 +83,31 @@ def build_config(data: Dict) -> StackingConfig:
     )
 
 
-def validate_config(config: StackingConfig) -> List[str]:
-    """Mirrors the frontend's former ConfigValidator.js rules exactly, so
-    the error banner text is unchanged."""
-    errors: List[str] = []
+def validate_config(config: StackingConfig) -> List[Dict]:
+    """Mirrors the frontend's former ConfigValidator.js rules exactly. Each
+    error is a `{code, params}` pair rather than pre-rendered text so the
+    client can localize it (see front/src/i18n/{ru,en}.js: `errors`)."""
+    errors: List[Dict] = []
 
-    def positive(v: float, name: str) -> None:
+    def positive(v: float, code: str) -> None:
         if not (v > 0):
-            errors.append(f"{name} must be greater than 0")
+            errors.append({"code": code, "params": {}})
 
-    positive(config.box.length, "Box length")
-    positive(config.box.width, "Box width")
-    positive(config.box.height, "Box height")
+    positive(config.box.length, "boxLengthPositive")
+    positive(config.box.width, "boxWidthPositive")
+    positive(config.box.height, "boxHeightPositive")
     if not (config.box.weight >= 0):
-        errors.append("Box weight must be ≥ 0")
+        errors.append({"code": "boxWeightNonNeg", "params": {}})
 
-    positive(config.pallet.length, "Pallet length")
-    positive(config.pallet.width, "Pallet width")
+    positive(config.pallet.length, "palletLengthPositive")
+    positive(config.pallet.width, "palletWidthPositive")
     if not (config.pallet.deck_height >= 0):
-        errors.append("Deck height must be ≥ 0")
-    positive(config.pallet.load_capacity, "Load capacity")
+        errors.append({"code": "deckHeightNonNeg", "params": {}})
+    positive(config.pallet.load_capacity, "loadCapacityPositive")
 
-    positive(config.max_stack_height, "Max stack height")
+    positive(config.max_stack_height, "maxStackHeightPositive")
     if config.max_stack_height <= config.pallet.deck_height:
-        errors.append("Max stack height must exceed deck height")
+        errors.append({"code": "maxStackHeightExceedsDeck", "params": {}})
 
     return errors
 

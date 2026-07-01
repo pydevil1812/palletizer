@@ -6,6 +6,7 @@ import { useHistory } from './hooks/useHistory.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useLang } from './i18n/LangContext.jsx';
+import { formatError, formatRecommendation } from './i18n/messages.js';
 import { CanvasTopRenderer } from './services/CanvasTopRenderer.js';
 import { CanvasSideRenderer } from './services/CanvasSideRenderer.js';
 import { ExportService } from './services/ExportService.js';
@@ -20,7 +21,7 @@ import { AdminPage } from './components/Admin/AdminPage.jsx';
 import './styles/palletizer.css';
 
 export default function App() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const auth = useAuth();
   const config = usePalletConfig();
   const stack = useStackResult();
@@ -84,13 +85,13 @@ export default function App() {
 
   useEffect(() => {
     if (!canvasTopRef.current) return;
-    setTopInfo(topRenderer.draw(canvasTopRef.current, stack.result, topLayerIndex));
-  }, [stack.result, topLayerIndex, topRenderer]);
+    setTopInfo(topRenderer.draw(canvasTopRef.current, stack.result, topLayerIndex, t));
+  }, [stack.result, topLayerIndex, topRenderer, t, lang]);
 
   useEffect(() => {
     if (!canvasSideRef.current) return;
-    sideRenderer.draw(canvasSideRef.current, stack.result, sideAxis);
-  }, [stack.result, sideAxis, sideRenderer]);
+    sideRenderer.draw(canvasSideRef.current, stack.result, sideAxis, t);
+  }, [stack.result, sideAxis, sideRenderer, t, lang]);
 
   useEffect(() => {
     if (threeScene.ready) threeScene.build(stack.result);
@@ -131,17 +132,22 @@ export default function App() {
     side: canvasSideRef.current ? canvasSideRef.current.toDataURL('image/png') : null,
   });
 
+  const localizedResult = () => ({
+    ...stack.result,
+    recommendations: stack.result.recommendations.map((r) => formatRecommendation(t, r)),
+  });
+
   const handleExportPdf = () => {
     if (!stack.result) { alert(t('app.runCalcFirst')); return; }
-    ExportService.exportPdf(stack.result, collectImages());
+    ExportService.exportPdf(localizedResult(), collectImages());
   };
   const handleExportXlsx = () => {
     if (!stack.result) { alert(t('app.runCalcFirst')); return; }
-    ExportService.exportXlsx(stack.result);
+    ExportService.exportXlsx(localizedResult());
   };
   const handlePrint = () => {
     if (!stack.result) { alert(t('app.runCalcFirst')); return; }
-    ExportService.print(printAreaRef.current, stack.result, collectImages());
+    ExportService.print(printAreaRef.current, localizedResult(), collectImages());
   };
 
   // ── Auth gate ──────────────────────────────────────────────────────────────
@@ -163,7 +169,7 @@ export default function App() {
   let bannerMessage = '';
   if (stack.errors.length) {
     bannerType = 'err';
-    bannerMessage = t('app.fixErrors') + stack.errors.join('; ');
+    bannerMessage = t('app.fixErrors') + stack.errors.map((e) => formatError(t, e)).join('; ');
   } else if (stack.result && stack.result.totalBoxes === 0) {
     bannerType = 'warn';
     bannerMessage = t('app.noBoxes');

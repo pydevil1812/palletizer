@@ -30,7 +30,7 @@ export function useStackResult() {
       setVariantIndex(0);
       return vs;
     } catch (err) {
-      setErrors(err.validationErrors ?? [err.message]);
+      setErrors(err.validationErrors ?? [{ code: 'unknown', params: { detail: err.message } }]);
       return null;
     } finally {
       setIsComputing(false);

@@ -5,13 +5,13 @@ import { fmt } from '../utils/format.js';
 /** Draws the top-down (plan) view of a single layer onto a 2D canvas. */
 export class CanvasTopRenderer {
   /** Returns { boxCount, orientation, zStart } for the drawn layer, or null if nothing to draw. */
-  draw(canvas, result, layerIndex) {
+  draw(canvas, result, layerIndex, t) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!result || !result.layers.length) {
       ctx.fillStyle = '#5b6a7d';
       ctx.font = '14px system-ui';
-      ctx.fillText('No layout', 20, 30);
+      ctx.fillText(t('views.noLayout'), 20, 30);
       return null;
     }
 
@@ -56,12 +56,12 @@ export class CanvasTopRenderer {
 
     ctx.fillStyle = '#93a4b8';
     ctx.font = '12px system-ui';
-    ctx.fillText(`← length ${fmt(pallet.length)} mm →`, ox, oy - 14);
+    ctx.fillText(t('views.axisArrowLabel', { axis: t('views.lengthAxis'), mm: fmt(pallet.length) }), ox, oy - 14);
     ctx.save();
     ctx.translate(ox - 16, oy + (pallet.width * s) / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillText(`width ${fmt(pallet.width)} mm`, 0, 0);
+    ctx.fillText(t('views.axisLabel', { axis: t('views.widthAxis'), mm: fmt(pallet.width) }), 0, 0);
     ctx.restore();
 
     return { boxCount: layer.rects.length, orientation: layer.orientation, zStart: layer.zStart };

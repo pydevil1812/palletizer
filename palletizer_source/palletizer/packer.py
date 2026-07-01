@@ -256,20 +256,17 @@ def _finalize(config: StackingConfig, layers: List[LayerResult],
 
 
 def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
-                            total_height: float, total_weight: float) -> List[str]:
+                            total_height: float, total_weight: float) -> List[Dict]:
     """Lightweight, explainable heuristics. These are suggestions only and
     do not modify the result; a human should sanity-check before changing
-    box specs."""
-    recs: List[str] = []
+    box specs. Each entry is `{code, params}` rather than pre-rendered text
+    so the client can localize it (see front/src/i18n/{ru,en}.js:
+    `recommendations.codes`)."""
+    recs: List[Dict] = []
     box, pallet = config.box, config.pallet
 
     if not layers:
-        recs.append(
-            "No box orientation fits the pallet footprint and the allowed "
-            "stack height/weight at the same time. Check box dimensions "
-            "against the pallet footprint and deck height, or relax the "
-            "orientation flags."
-        )
+        recs.append({"code": "noFit", "params": {}})
         return recs
 
     bottom = layers[0]
@@ -281,25 +278,33 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
         target_dx = pallet.length / (nx + 1)
         reduction = bottom.dim_x - target_dx
         if 0 < reduction <= bottom.dim_x * REC_THRESHOLD:
-            note = f", reclaiming the {rem_x:.0f} mm currently left over" if rem_x > 1 else ""
-            recs.append(
-                f"Reducing the box dimension currently placed along pallet "
-                f"length (now {bottom.dim_x:.0f} mm) by about {reduction:.0f} mm "
-                f"(to ~{target_dx:.0f} mm) would fit one more column per "
-                f"layer ({nx + 1} instead of {nx}){note}."
-            )
+            params = {
+                "current": round(bottom.dim_x),
+                "reduction": round(reduction),
+                "target": round(target_dx),
+                "nx1": nx + 1,
+                "nx": nx,
+            }
+            if rem_x > 1:
+                recs.append({"code": "reduceLengthReclaim", "params": {**params, "rem": round(rem_x)}})
+            else:
+                recs.append({"code": "reduceLength", "params": params})
     if ny > 0:
         rem_y = pallet.width - ny * bottom.dim_y
         target_dy = pallet.width / (ny + 1)
         reduction = bottom.dim_y - target_dy
         if 0 < reduction <= bottom.dim_y * REC_THRESHOLD:
-            note = f", reclaiming the {rem_y:.0f} mm currently left over" if rem_y > 1 else ""
-            recs.append(
-                f"Reducing the box dimension currently placed along pallet "
-                f"width (now {bottom.dim_y:.0f} mm) by about {reduction:.0f} mm "
-                f"(to ~{target_dy:.0f} mm) would fit one more row per layer "
-                f"({ny + 1} instead of {ny}){note}."
-            )
+            params = {
+                "current": round(bottom.dim_y),
+                "reduction": round(reduction),
+                "target": round(target_dy),
+                "ny1": ny + 1,
+                "ny": ny,
+            }
+            if rem_y > 1:
+                recs.append({"code": "reduceWidthReclaim", "params": {**params, "rem": round(rem_y)}})
+            else:
+                recs.append({"code": "reduceWidth", "params": params})
 
     n_layers = len(layers)
     avg_dz = sum(l.dim_z for l in layers) / n_layers
@@ -307,30 +312,35 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
     target_dz = available_for_layers / (n_layers + 1)
     reduction_h = avg_dz - target_dz
     if 0 < reduction_h <= avg_dz * REC_THRESHOLD:
-        recs.append(
-            f"Reducing box height by about {reduction_h:.0f} mm "
-            f"(to ~{target_dz:.0f} mm) would allow an extra layer "
-            f"({n_layers + 1} instead of {n_layers}) within the {config.max_stack_height:.0f} mm "
-            f"max stack height."
-        )
+        recs.append({
+            "code": "reduceHeight",
+            "params": {
+                "reduction": round(reduction_h),
+                "target": round(target_dz),
+                "n1": n_layers + 1,
+                "n": n_layers,
+                "max": round(config.max_stack_height),
+            },
+        })
 
     weight_headroom = pallet.load_capacity - total_weight
     height_headroom = config.max_stack_height - total_height
     if height_headroom < avg_dz and weight_headroom > box.weight * 5:
-        recs.append(
-            f"The stack is height-limited: {weight_headroom:.0f} kg of load "
-            f"capacity ({weight_headroom / pallet.load_capacity * 100:.0f}% of "
-            f"capacity) is unused. If a taller stack were allowed, this "
-            f"pallet could carry meaningfully more boxes."
-        )
+        recs.append({
+            "code": "heightLimited",
+            "params": {
+                "headroom": round(weight_headroom),
+                "pct": round(weight_headroom / pallet.load_capacity * 100),
+            },
+        })
     elif weight_headroom < box.weight and height_headroom > avg_dz:
-        recs.append(
-            f"The stack is weight-limited: {height_headroom:.0f} mm of "
-            f"allowed stack height is unused because the pallet's load "
-            f"capacity ({pallet.load_capacity:.0f} kg) is nearly reached. "
-            f"Lighter boxes or a higher-capacity pallet would let you use "
-            f"the remaining height."
-        )
+        recs.append({
+            "code": "weightLimited",
+            "params": {
+                "headroom": round(height_headroom),
+                "capacity": round(pallet.load_capacity),
+            },
+        })
 
     avg_fill = (sum(l.count * (l.dim_x * l.dim_y) for l in layers) /
                 (len(layers) * pallet.footprint_area)) if layers else 0.0
@@ -342,19 +352,14 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
             ("allow_rotate_z", flags.allow_rotate_z),
         ) if not on]
         if disabled:
-            recs.append(
-                f"Average footprint fill per layer is {avg_fill * 100:.0f}%, below "
-                f"the 75% rule-of-thumb. The following orientation flag(s) are "
-                f"currently disabled and could be reviewed if the box can safely "
-                f"be reoriented: {', '.join(disabled)}."
-            )
+            recs.append({
+                "code": "lowFillWithDisabledFlags",
+                "params": {"fill": round(avg_fill * 100), "flags": disabled},
+            })
         else:
-            recs.append(
-                f"Average footprint fill per layer is {avg_fill * 100:.0f}% even "
-                f"with all rotations already allowed. The box footprint likely "
-                f"doesn't divide evenly into the pallet footprint — revisit the "
-                f"box length/width, or consider a mixed-pattern/interlocking "
-                f"layout (not currently modeled by this version)."
-            )
+            recs.append({
+                "code": "lowFillAllRotationsAllowed",
+                "params": {"fill": round(avg_fill * 100)},
+            })
 
     return recs

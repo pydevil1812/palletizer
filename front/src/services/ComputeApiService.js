@@ -12,7 +12,9 @@ export class ComputeApiService {
         body: JSON.stringify(exportJson),
       });
     } catch (err) {
-      throw new Error('Could not reach the compute server. Is it running? (' + err.message + ')');
+      const e = new Error('Network error');
+      e.validationErrors = [{ code: 'network', params: { detail: err.message } }];
+      throw e;
     }
 
     let body = null;
@@ -28,7 +30,9 @@ export class ComputeApiService {
       throw err;
     }
     if (!res.ok) {
-      throw new Error(`Compute request failed (${res.status})`);
+      const err = new Error(`Compute request failed (${res.status})`);
+      err.validationErrors = [{ code: 'requestFailed', params: { status: res.status } }];
+      throw err;
     }
     return body;
   }

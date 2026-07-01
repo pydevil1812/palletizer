@@ -29,9 +29,6 @@ export function Sidebar({ config, onResetExample, onCompute, additionalOpenSigna
           {t('sidebar.compute')}
         </button>
       </div>
-      <p className="muted" style={{ fontSize: 11, marginTop: 12 }}>
-        {t('sidebar.engineDesc')}
-      </p>
     </aside>
   );
 }
