@@ -11,7 +11,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -52,7 +52,7 @@ def _row_to_dict(row):
 
 
 def _cleanup_sessions():
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     expired = [t for t, s in list(_sessions.items()) if s['expires'] < now]
     for t in expired:
         del _sessions[t]
@@ -109,7 +109,7 @@ def login():
     _sessions[token] = {
         'username': user['username'],
         'role': user['role'],
-        'expires': datetime.utcnow() + timedelta(hours=24),
+        'expires': datetime.now(timezone.utc) + timedelta(hours=24),
     }
     return jsonify({'token': token, 'username': user['username'], 'role': user['role']})
 
