@@ -3,14 +3,13 @@ Packing engine.
 
 Two stages:
   1. `pack_rectangle` arranges identical a x b rectangles inside an
-     L x W footprint (one pallet layer) using a grid + leftover-strip
-     heuristic. This is a well-known simplified approach to the 2D
-     pallet-loading problem: fill most of the area with a uniform grid,
-     then try to squeeze a rotated row/column into whatever strip is
-     left over. It is NOT a global optimum (true pallet loading is
-     NP-hard) but it is fast, deterministic, and gives results very
-     close to optimal for the common case of box footprints that are a
-     reasonable fraction of the pallet footprint.
+     L x W footprint (one pallet layer) using an exact DP over all
+     two-type strip decompositions. For identical rectangles any valid
+     packing can be rearranged into strips without reducing the count,
+     so the DP is optimal. It enumerates every split into n_b strips of
+     height b (items a×b) plus n_a strips of height a (items b×a) in
+     both the horizontal and vertical directions, and returns the
+     arrangement with the highest count.
 
   2. `stack_layers` repeatedly calls stage 1 for every allowed box
      orientation, picks the orientation that yields the most boxes for
@@ -43,34 +42,64 @@ def _grid(L: float, W: float, a: float, b: float) -> Tuple[int, int]:
     return int(L // a), int(W // b)
 
 
-def _grid_plus_strip(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
-    """Grid of a x b, plus a leftover strip filled with the 90-deg-rotated
-    piece (b x a) if `allow_swap` and the strip is large enough."""
-    nx, ny = _grid(L, W, a, b)
-    rects: List[Rect] = [(i * a, j * b, a, b) for i in range(nx) for j in range(ny)]
-    used_x, used_y = nx * a, ny * b
-    rem_x, rem_y = L - used_x, W - used_y
-
-    best_extra: List[Rect] = []
-    if allow_swap and rem_x >= b > 0:
-        ny2, nx2 = int(W // a), int(rem_x // b)
-        extra = [(used_x + i * b, j * a, b, a) for i in range(nx2) for j in range(ny2)]
-        if len(extra) > len(best_extra):
-            best_extra = extra
-    if allow_swap and rem_y >= a > 0:
-        nx3, ny3 = int(L // b), int(rem_y // a)
-        extra = [(i * b, used_y + j * a, b, a) for i in range(nx3) for j in range(ny3)]
-        if len(extra) > len(best_extra):
-            best_extra = extra
-    return rects + best_extra
-
-
 def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
-    """Best layer layout found for an a x b footprint on an L x W pallet."""
-    candidates = [_grid_plus_strip(L, W, a, b, allow_swap)]
+    """Exact optimal layout for identical a×b footprints on an L×W pallet.
+
+    Enumerates every two-type strip decomposition in both the horizontal
+    and vertical directions and returns the arrangement with the most boxes.
+
+    Horizontal: n_b strips of height b (items a wide, b tall) +
+                n_a strips of height a (items b wide, a tall).
+    Vertical:   n_a strips of width  a (items a wide, b tall) +
+                n_b strips of width  b (items b wide, a tall).
+    """
+    if a <= 0 or b <= 0 or L <= 0 or W <= 0:
+        return []
+
+    best: List[Rect] = []
+
+    def _update(rects: List[Rect]) -> None:
+        nonlocal best
+        if len(rects) > len(best):
+            best = rects
+
+    # items per strip for each strip type
+    per_hb = int(L // a)                       # height-b strip → a×b items
+    per_ha = int(L // b) if allow_swap else 0  # height-a strip → b×a items
+
+    # ── horizontal strips (stacked along Y) ──────────────────────────────────
+    for nb in range(int(W // b) + 1):
+        na = int((W - nb * b) // a) if allow_swap else 0
+        if nb * per_hb + na * per_ha > len(best):
+            rects: List[Rect] = []
+            y = 0.0
+            for _ in range(nb):
+                rects += [(i * a, y, a, b) for i in range(per_hb)]
+                y += b
+            for _ in range(na):
+                rects += [(i * b, y, b, a) for i in range(per_ha)]
+                y += a
+            _update(rects)
+
+    # ── vertical strips (stacked along X) ────────────────────────────────────
     if allow_swap:
-        candidates.append(_grid_plus_strip(L, W, b, a, allow_swap))
-    return max(candidates, key=len)
+        per_va = int(W // b)  # width-a strip → a×b items
+        per_vb = int(W // a)  # width-b strip → b×a items
+
+        for na in range(int(L // a) + 1):
+            nb = int((L - na * a) // b)
+            if na * per_va + nb * per_vb > len(best):
+                rects = []
+                x = 0.0
+                for _ in range(na):
+                    rects += [(x, j * b, a, b) for j in range(per_va)]
+                    x += a
+                for _ in range(nb):
+                    rects += [(x, j * a, b, a) for j in range(per_vb)]
+                    x += b
+                _update(rects)
+
+    return best
 
 
 def _layer_height_budget(idx: int, additional: Optional[AdditionalElements]) -> float:
@@ -97,13 +126,18 @@ def stack_layers(config: StackingConfig) -> StackingResult:
     layers: List[LayerResult] = []
     layer_idx = 0
     max_iterations = 1000  # safety guard against pathological inputs
+    limiting = "pattern"
 
     while layer_idx < max_iterations:
         spacer_h = _layer_height_budget(layer_idx, additional)
         spacer_w = _layer_weight_budget(layer_idx, additional)
         remaining_h = config.max_stack_height - z_cursor - spacer_h
         remaining_w = pallet.load_capacity - weight_used - spacer_w
-        if remaining_h <= 0 or remaining_w <= 0:
+        if remaining_h <= 0:
+            limiting = "height"
+            break
+        if remaining_w <= 0:
+            limiting = "weight"
             break
 
         best = None
@@ -128,6 +162,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
                 best = {"orient": orient, "rects": rects, "count": count, "weight": layer_weight}
 
         if not best or best["count"] == 0:
+            limiting = "pattern" if layer_idx == 0 else "height"
             break
 
         z_cursor += spacer_h
@@ -146,11 +181,11 @@ def stack_layers(config: StackingConfig) -> StackingResult:
         weight_used += best["weight"]
         layer_idx += 1
 
-    return _finalize(config, layers, z_cursor, weight_used)
+    return _finalize(config, layers, z_cursor, weight_used, limiting)
 
 
 def _finalize(config: StackingConfig, layers: List[LayerResult],
-              z_cursor: float, weight_used: float) -> StackingResult:
+              z_cursor: float, weight_used: float, limiting: str = "pattern") -> StackingResult:
     box, pallet, additional = config.box, config.pallet, config.additional
 
     placed_boxes: List[PlacedBox] = []
@@ -216,24 +251,22 @@ def _finalize(config: StackingConfig, layers: List[LayerResult],
         recommendations=recommendations,
         additional_weight=additional_weight,
         additional_height=additional_height,
+        limiting=limiting,
     )
 
 
 def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
-                            total_height: float, total_weight: float) -> List[str]:
+                            total_height: float, total_weight: float) -> List[Dict]:
     """Lightweight, explainable heuristics. These are suggestions only and
     do not modify the result; a human should sanity-check before changing
-    box specs."""
-    recs: List[str] = []
+    box specs. Each entry is `{code, params}` rather than pre-rendered text
+    so the client can localize it (see front/src/i18n/{ru,en}.js:
+    `recommendations.codes`)."""
+    recs: List[Dict] = []
     box, pallet = config.box, config.pallet
 
     if not layers:
-        recs.append(
-            "No box orientation fits the pallet footprint and the allowed "
-            "stack height/weight at the same time. Check box dimensions "
-            "against the pallet footprint and deck height, or relax the "
-            "orientation flags."
-        )
+        recs.append({"code": "noFit", "params": {}})
         return recs
 
     bottom = layers[0]
@@ -245,25 +278,33 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
         target_dx = pallet.length / (nx + 1)
         reduction = bottom.dim_x - target_dx
         if 0 < reduction <= bottom.dim_x * REC_THRESHOLD:
-            note = f", reclaiming the {rem_x:.0f} mm currently left over" if rem_x > 1 else ""
-            recs.append(
-                f"Reducing the box dimension currently placed along pallet "
-                f"length (now {bottom.dim_x:.0f} mm) by about {reduction:.0f} mm "
-                f"(to ~{target_dx:.0f} mm) would fit one more column per "
-                f"layer ({nx + 1} instead of {nx}){note}."
-            )
+            params = {
+                "current": round(bottom.dim_x),
+                "reduction": round(reduction),
+                "target": round(target_dx),
+                "nx1": nx + 1,
+                "nx": nx,
+            }
+            if rem_x > 1:
+                recs.append({"code": "reduceLengthReclaim", "params": {**params, "rem": round(rem_x)}})
+            else:
+                recs.append({"code": "reduceLength", "params": params})
     if ny > 0:
         rem_y = pallet.width - ny * bottom.dim_y
         target_dy = pallet.width / (ny + 1)
         reduction = bottom.dim_y - target_dy
         if 0 < reduction <= bottom.dim_y * REC_THRESHOLD:
-            note = f", reclaiming the {rem_y:.0f} mm currently left over" if rem_y > 1 else ""
-            recs.append(
-                f"Reducing the box dimension currently placed along pallet "
-                f"width (now {bottom.dim_y:.0f} mm) by about {reduction:.0f} mm "
-                f"(to ~{target_dy:.0f} mm) would fit one more row per layer "
-                f"({ny + 1} instead of {ny}){note}."
-            )
+            params = {
+                "current": round(bottom.dim_y),
+                "reduction": round(reduction),
+                "target": round(target_dy),
+                "ny1": ny + 1,
+                "ny": ny,
+            }
+            if rem_y > 1:
+                recs.append({"code": "reduceWidthReclaim", "params": {**params, "rem": round(rem_y)}})
+            else:
+                recs.append({"code": "reduceWidth", "params": params})
 
     n_layers = len(layers)
     avg_dz = sum(l.dim_z for l in layers) / n_layers
@@ -271,30 +312,35 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
     target_dz = available_for_layers / (n_layers + 1)
     reduction_h = avg_dz - target_dz
     if 0 < reduction_h <= avg_dz * REC_THRESHOLD:
-        recs.append(
-            f"Reducing box height by about {reduction_h:.0f} mm "
-            f"(to ~{target_dz:.0f} mm) would allow an extra layer "
-            f"({n_layers + 1} instead of {n_layers}) within the {config.max_stack_height:.0f} mm "
-            f"max stack height."
-        )
+        recs.append({
+            "code": "reduceHeight",
+            "params": {
+                "reduction": round(reduction_h),
+                "target": round(target_dz),
+                "n1": n_layers + 1,
+                "n": n_layers,
+                "max": round(config.max_stack_height),
+            },
+        })
 
     weight_headroom = pallet.load_capacity - total_weight
     height_headroom = config.max_stack_height - total_height
     if height_headroom < avg_dz and weight_headroom > box.weight * 5:
-        recs.append(
-            f"The stack is height-limited: {weight_headroom:.0f} kg of load "
-            f"capacity ({weight_headroom / pallet.load_capacity * 100:.0f}% of "
-            f"capacity) is unused. If a taller stack were allowed, this "
-            f"pallet could carry meaningfully more boxes."
-        )
+        recs.append({
+            "code": "heightLimited",
+            "params": {
+                "headroom": round(weight_headroom),
+                "pct": round(weight_headroom / pallet.load_capacity * 100),
+            },
+        })
     elif weight_headroom < box.weight and height_headroom > avg_dz:
-        recs.append(
-            f"The stack is weight-limited: {height_headroom:.0f} mm of "
-            f"allowed stack height is unused because the pallet's load "
-            f"capacity ({pallet.load_capacity:.0f} kg) is nearly reached. "
-            f"Lighter boxes or a higher-capacity pallet would let you use "
-            f"the remaining height."
-        )
+        recs.append({
+            "code": "weightLimited",
+            "params": {
+                "headroom": round(height_headroom),
+                "capacity": round(pallet.load_capacity),
+            },
+        })
 
     avg_fill = (sum(l.count * (l.dim_x * l.dim_y) for l in layers) /
                 (len(layers) * pallet.footprint_area)) if layers else 0.0
@@ -306,19 +352,14 @@ def _build_recommendations(config: StackingConfig, layers: List[LayerResult],
             ("allow_rotate_z", flags.allow_rotate_z),
         ) if not on]
         if disabled:
-            recs.append(
-                f"Average footprint fill per layer is {avg_fill * 100:.0f}%, below "
-                f"the 75% rule-of-thumb. The following orientation flag(s) are "
-                f"currently disabled and could be reviewed if the box can safely "
-                f"be reoriented: {', '.join(disabled)}."
-            )
+            recs.append({
+                "code": "lowFillWithDisabledFlags",
+                "params": {"fill": round(avg_fill * 100), "flags": disabled},
+            })
         else:
-            recs.append(
-                f"Average footprint fill per layer is {avg_fill * 100:.0f}% even "
-                f"with all rotations already allowed. The box footprint likely "
-                f"doesn't divide evenly into the pallet footprint — revisit the "
-                f"box length/width, or consider a mixed-pattern/interlocking "
-                f"layout (not currently modeled by this version)."
-            )
+            recs.append({
+                "code": "lowFillAllRotationsAllowed",
+                "params": {"fill": round(avg_fill * 100)},
+            })
 
     return recs

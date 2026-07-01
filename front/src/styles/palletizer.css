@@ -1,7 +1,15 @@
 :root{
   --bg:#0f141b; --panel:#171f2a; --panel2:#1e2835; --line:#2b384a;
   --text:#e6edf5; --muted:#93a4b8; --accent:#4da3ff; --accent2:#36c08a;
-  --warn:#e7a13a; --danger:#e5604d; --chip:#243043;
+  --warn:#e7a13a; --danger:#e5604d; --chip:#243043; --inputbg:#0e151e;
+}
+/* Light theme: same structure/spacing, swapped tokens only. The 3D/2D
+   viewport canvases intentionally stay dark in both themes (a fixed
+   "stage" behind the rendered scene, matching the original desktop app). */
+:root[data-theme="light"]{
+  --bg:#f3f5f8; --panel:#ffffff; --panel2:#f0f3f7; --line:#d7dee6;
+  --text:#1b2430; --muted:#5b6b7d; --accent:#2972d6; --accent2:#1f9d6c;
+  --warn:#b5790a; --danger:#c23b2a; --chip:#e8edf3; --inputbg:#ffffff;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -15,12 +23,13 @@ body{
    wouldn't reach the viewport edges. */
 #root{display:flex; flex-direction:column; height:100%}
 header.app{
-  display:flex; align-items:center; gap:14px; padding:10px 16px;
+  display:flex; align-items:center; gap:14px; padding:4px 16px;
   background:linear-gradient(90deg,#15202e,#101824); border-bottom:1px solid var(--line);
 }
-header.app h1{font-size:16px; margin:0; font-weight:650; letter-spacing:.2px}
+header.app h1{font-size:15px; margin:0; font-weight:650; letter-spacing:.2px}
 header.app .sub{color:var(--muted); font-size:12px}
 header.app .spacer{flex:1}
+header.app button{padding:5px 10px}
 button{
   font:inherit; color:var(--text); background:var(--panel2);
   border:1px solid var(--line); border-radius:7px; padding:7px 12px;
@@ -46,7 +55,7 @@ button:disabled{opacity:.45; cursor:not-allowed}
 .field{display:flex; flex-direction:column; gap:3px}
 .field label{font-size:11px; color:var(--muted)}
 .field input[type=text], .field input[type=number]{
-  background:#0e151e; border:1px solid var(--line); color:var(--text);
+  background:var(--inputbg); border:1px solid var(--line); color:var(--text);
   border-radius:6px; padding:6px 8px; font:inherit; width:100%;
 }
 .field input:focus{outline:none; border-color:var(--accent)}
@@ -64,11 +73,11 @@ details.card[open] summary::before{content:"▾ "}
 
 /* results */
 .toolbar{
-  display:flex; align-items:center; gap:8px; padding:10px 14px;
+  display:flex; align-items:center; gap:8px; padding:4px 14px;
   border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap;
 }
-.tabs{display:flex; gap:4px; background:#0e151e; padding:4px; border-radius:9px}
-.tabs button{background:transparent; border:none; padding:6px 12px; border-radius:6px; color:var(--muted)}
+.tabs{display:flex; gap:4px; background:#0e151e; padding:3px; border-radius:9px}
+.tabs button{background:transparent; border:none; padding:4px 12px; border-radius:6px; color:var(--muted)}
 .tabs button.active{background:var(--accent); color:#06182c; font-weight:650}
 .toolbar .spacer{flex:1}
 
@@ -106,17 +115,18 @@ table.boxes th{position:sticky; top:0; background:var(--panel2); color:var(--mut
 table.boxes td.l, table.boxes th.l{text-align:left}
 table.boxes tbody tr:hover{background:#1a2533}
 
-details.recs{border-top:1px solid var(--line); background:var(--panel); max-height:40vh; overflow:auto}
-details.recs > summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:12px;
-  text-transform:uppercase; letter-spacing:.6px; color:var(--muted); font-weight:600; user-select:none}
-details.recs > summary::-webkit-details-marker{display:none}
-details.recs > summary::before{content:"▸"; color:var(--accent); display:inline-block; width:14px; transition:transform .15s}
-details.recs[open] > summary::before{transform:rotate(90deg)}
-details.recs #recsBody{padding:0 14px 14px; color:#cdd9e6}
-details.recs ul{margin:0; padding-left:18px}
-details.recs li{margin-bottom:6px}
-.reccount{margin-left:8px; color:var(--accent); background:var(--chip); border:1px solid var(--line);
+.recsbar{
+  display:flex; align-items:center; gap:8px; width:100%; border:none; border-top:1px solid var(--line);
+  background:var(--panel); color:var(--muted); font:inherit; text-transform:uppercase; letter-spacing:.6px;
+  font-size:12px; font-weight:600; padding:10px 14px; cursor:pointer; text-align:left;
+}
+.recsbar:hover{color:var(--text)}
+.recsbar.active{color:var(--accent)}
+.reccount{margin-left:2px; color:var(--accent); background:var(--chip); border:1px solid var(--line);
   border-radius:10px; padding:1px 8px; font-size:11px; letter-spacing:0; font-weight:600}
+
+.recspanel .recs-ul{margin:0; padding-left:18px; color:var(--text); font-size:13px}
+.recspanel .recs-ul li{margin-bottom:8px}
 
 .banner{display:none; margin:0 14px 12px; padding:10px 12px; border-radius:8px; border:1px solid}
 .banner.err{display:block; background:#3a1d1a; border-color:var(--danger); color:#ffd6cf}
@@ -131,6 +141,123 @@ details.recs li{margin-bottom:6px}
   .main{min-height:58vh}
   .viewwrap{min-height:46vh}
 }
+
+/* settings icon + popover */
+.iconbtn{font-size:16px; padding:7px 10px; line-height:1}
+.settingsAnchor{position:relative}
+.popover{
+  position:absolute; top:calc(100% + 8px); left:0; z-index:30; width:240px;
+  background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+  padding:10px; box-shadow:0 12px 28px rgba(0,0,0,.35);
+}
+.popover-section{padding:6px 4px}
+.popover-section + .popover-section{border-top:1px solid var(--line); margin-top:4px}
+.popover-section h3{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:0 0 6px}
+.popover-section button{display:block; width:100%; text-align:left; margin-bottom:4px}
+.popover-section button:last-child{margin-bottom:0}
+
+/* modal overlay (history) */
+.modal-overlay{
+  position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
+  background:rgba(5,8,12,.6); padding:24px;
+}
+.modal-box{
+  position:relative; width:min(820px, 100%); max-height:80vh; display:flex; flex-direction:column;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.modal-box h2{margin:0 0 4px; font-size:16px}
+.modal-close{
+  position:absolute; top:12px; right:12px; padding:4px 9px; font-size:14px; border-radius:7px;
+}
+.history-list{overflow:auto; margin-top:10px; flex:1; min-height:0}
+.history-table{width:100%}
+.history-table tbody tr{cursor:pointer}
+.history-table tbody tr.selected{background:var(--chip); outline:1px solid var(--accent)}
+.history-table .row-delete{padding:2px 7px; font-size:11px; border-color:transparent}
+.history-table .row-delete:hover{border-color:var(--danger); color:var(--danger)}
+.history-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
+
+/* variant picker (Options button, header top-right next to Compute) */
+.variant-fab-anchor{position:relative}
+.variant-dropdown{
+  position:absolute; top:calc(100% + 8px); right:0; z-index:30; width:300px; max-width:calc(100vw - 32px);
+  max-height:60vh; overflow:auto; box-sizing:border-box;
+  background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px;
+  box-shadow:0 12px 28px rgba(0,0,0,.35);
+}
+.variant-dropdown h3{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:2px 4px 8px}
+.variant-card{
+  display:block; width:100%; text-align:left; background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; padding:8px 10px; margin-bottom:6px;
+}
+.variant-card:last-child{margin-bottom:0}
+.variant-card.active{border-color:var(--accent)}
+.variant-card-name{font-size:12px; font-weight:650; margin-bottom:2px}
+.variant-card-desc{font-size:11px; margin-bottom:4px}
+.variant-card-stats{font-size:11px}
+
+/* ── Auth (login page) ──────────────────────────────────────────────────── */
+.auth-overlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:var(--bg); padding:24px;
+}
+.auth-box{
+  width:min(420px,100%); background:var(--panel); border:1px solid var(--line);
+  border-radius:14px; padding:32px 28px; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; align-items:center;
+}
+.auth-logo{font-size:40px; margin-bottom:6px}
+.auth-title{font-size:18px; font-weight:700; margin:0 0 4px; text-align:center}
+.auth-sub{font-size:12px; text-align:center; margin:0 0 20px}
+.auth-tabs{
+  display:flex; gap:4px; background:var(--panel2); border:1px solid var(--line);
+  border-radius:9px; padding:3px; margin-bottom:18px; width:100%;
+}
+.auth-tabs button{
+  flex:1; background:transparent; border:none; padding:6px 12px; border-radius:6px;
+  color:var(--muted); font-weight:500;
+}
+.auth-tabs button.active{background:var(--accent); color:#06182c; font-weight:650}
+.auth-form{width:100%}
+.auth-submit{display:block; width:100%; margin-top:18px; padding:9px}
+
+/* ── Header user area ────────────────────────────────────────────────────── */
+.header-user{display:flex; align-items:center; gap:8px}
+.header-username{font-size:12px; white-space:nowrap}
+
+/* ── Admin page ─────────────────────────────────────────────────────────── */
+.admin-page{
+  display:flex; flex-direction:column; height:100%; background:var(--bg);
+  color:var(--text);
+}
+.admin-topbar{
+  display:flex; align-items:center; gap:14px; padding:8px 16px;
+  background:var(--panel); border-bottom:1px solid var(--line);
+}
+.admin-heading{font-size:15px; margin:0; flex:1}
+.admin-tabs-bar{
+  display:flex; gap:4px; padding:10px 16px; background:var(--panel2);
+  border-bottom:1px solid var(--line);
+}
+.admin-tab{
+  background:transparent; border:1px solid transparent; padding:5px 14px;
+  border-radius:7px; color:var(--muted);
+}
+.admin-tab.active{background:var(--accent); border-color:var(--accent); color:#06182c; font-weight:650}
+.admin-content{flex:1; overflow:auto; padding:16px}
+.admin-table-wrap{overflow-x:auto}
+.admin-row-actions{display:flex; gap:6px; flex-wrap:wrap}
+.admin-pw-row{display:flex; gap:8px; align-items:center}
+.admin-pw-row input{
+  background:var(--inputbg); border:1px solid var(--line); color:var(--text);
+  border-radius:6px; padding:6px 8px; font:inherit;
+}
+.role-badge{
+  display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;
+  background:var(--chip); border:1px solid var(--line);
+}
+.role-badge.admin{color:var(--accent); border-color:var(--accent)}
 
 /* print */
 #printArea{display:none}

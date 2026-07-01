@@ -2,7 +2,7 @@ import { Toolbar } from './Toolbar.jsx';
 import { Banner } from './Banner.jsx';
 import { StatsBar } from './StatsBar.jsx';
 import { Legend } from './Legend.jsx';
-import { Recommendations } from './Recommendations.jsx';
+import { RecommendationsBar } from './RecommendationsBar.jsx';
 import { ThreeDView } from './views/ThreeDView.jsx';
 import { TopView } from './views/TopView.jsx';
 import { SideView } from './views/SideView.jsx';
@@ -11,9 +11,6 @@ import { TableView } from './views/TableView.jsx';
 export function MainPanel({
   activeTab,
   onTabChange,
-  onExportPdf,
-  onExportXlsx,
-  onPrint,
   libWarning,
   bannerType,
   bannerMessage,
@@ -29,17 +26,12 @@ export function MainPanel({
   sideAxis,
   onSideAxisChange,
   canvasSideRef,
+  leftPanelMode,
+  onToggleLeftPanel,
 }) {
   return (
     <section className="main">
-      <Toolbar
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        onExportPdf={onExportPdf}
-        onExportXlsx={onExportXlsx}
-        onPrint={onPrint}
-        libWarning={libWarning}
-      />
+      <Toolbar activeTab={activeTab} onTabChange={onTabChange} libWarning={libWarning} />
 
       <Banner type={bannerType} message={bannerMessage} />
 
@@ -67,7 +59,11 @@ export function MainPanel({
 
       <Legend result={result} />
 
-      <Recommendations result={result} />
+      <RecommendationsBar
+        count={result?.recommendations?.length ?? 0}
+        active={leftPanelMode === 'recs'}
+        onClick={onToggleLeftPanel}
+      />
     </section>
   );
 }

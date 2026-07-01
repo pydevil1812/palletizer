@@ -1,14 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { FormField } from '../common/FormField.jsx';
 import { CheckboxField } from '../common/CheckboxField.jsx';
+import { useLang } from '../../i18n/LangContext.jsx';
 
-/**
- * `openSignal` increments whenever a config import (Load JSON / Reset example)
- * enables additional elements, mirroring the original app's behavior of
- * auto-expanding this <details> panel on import — manual checkbox toggles
- * never force it open or closed.
- */
 export function AdditionalElementsCard({ additional, onChange, openSignal }) {
+  const { t } = useLang();
   const detailsRef = useRef(null);
 
   useEffect(() => {
@@ -17,22 +13,22 @@ export function AdditionalElementsCard({ additional, onChange, openSignal }) {
 
   return (
     <details className="card" id="addCard" ref={detailsRef}>
-      <summary>Additional elements (optional)</summary>
+      <summary>{t('additional.title')}</summary>
       <div style={{ marginTop: 10 }}>
         <CheckboxField
           checked={additional.enabled}
           onChange={(v) => onChange('enabled', v)}
-          label="Enable additional elements"
-          hint="spacers, corner posts, stretch film — placeholder feature, expandable later"
+          label={t('additional.enable')}
+          hint={t('additional.enableHint')}
         />
         <CheckboxField
           checked={additional.useSpacers}
           onChange={(v) => onChange('useSpacers', v)}
-          label="Spacer sheets between layers"
+          label={t('additional.useSpacers')}
         />
         <div className="grid2">
           <FormField
-            label="Spacer thickness (mm)"
+            label={t('additional.spacerThickness')}
             type="number"
             min={0}
             step={0.5}
@@ -40,7 +36,7 @@ export function AdditionalElementsCard({ additional, onChange, openSignal }) {
             onChange={(v) => onChange('spacerThicknessMm', v)}
           />
           <FormField
-            label="Spacer weight (kg)"
+            label={t('additional.spacerWeight')}
             type="number"
             min={0}
             step={0.1}
@@ -51,11 +47,11 @@ export function AdditionalElementsCard({ additional, onChange, openSignal }) {
         <CheckboxField
           checked={additional.useCornerPosts}
           onChange={(v) => onChange('useCornerPosts', v)}
-          label="Corner posts"
+          label={t('additional.useCornerPosts')}
           style={{ marginTop: 6 }}
         />
         <FormField
-          label="Corner posts total weight (kg)"
+          label={t('additional.cornerPostWeight')}
           type="number"
           min={0}
           step={0.1}
@@ -65,11 +61,11 @@ export function AdditionalElementsCard({ additional, onChange, openSignal }) {
         <CheckboxField
           checked={additional.useFilm}
           onChange={(v) => onChange('useFilm', v)}
-          label="Stretch film"
+          label={t('additional.useFilm')}
           style={{ marginTop: 6 }}
         />
         <FormField
-          label="Film weight (kg)"
+          label={t('additional.filmWeight')}
           type="number"
           min={0}
           step={0.1}

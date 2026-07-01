@@ -1,0 +1,10 @@
+.env
+.claude/
+front/node_modules/
+palletizer_source/.deps_installed
+*.db
+*.sqlite
+*.sqlite3
+__pycache__/
+*.pyc
+*.docx

@@ -1,4 +1,5 @@
 import { fmt } from '../../utils/format.js';
+import { useLang } from '../../i18n/LangContext.jsx';
 
 function Stat({ k, value, unit }) {
   return (
@@ -12,15 +13,16 @@ function Stat({ k, value, unit }) {
 }
 
 export function StatsBar({ result }) {
+  const { t } = useLang();
   if (!result) return <div className="stats" />;
   const perLayer = result.boxesPerLayer;
 
   return (
     <div className="stats">
-      <Stat k="Boxes total" value={fmt(result.totalBoxes)} />
-      <Stat k="Layers" value={fmt(result.layers.length)} />
+      <Stat k={t('stats.boxesTotal')} value={fmt(result.totalBoxes)} />
+      <Stat k={t('stats.layers')} value={fmt(result.layers.length)} />
       <div className="stat">
-        <div className="k">Boxes / layer</div>
+        <div className="k">{t('stats.boxesPerLayer')}</div>
         <div className="v">
           {perLayer.length ? (
             <>
@@ -31,24 +33,24 @@ export function StatsBar({ result }) {
           )}
         </div>
       </div>
-      <Stat k="Footprint fill" value={fmt(result.footprintFill, 1)} unit="%" />
-      <Stat k="Volume fill" value={fmt(result.volumeFill, 1)} unit="%" />
-      <Stat k="Total height" value={fmt(result.totalHeight)} unit="mm" />
+      <Stat k={t('stats.footprintFill')} value={fmt(result.footprintFill, 1)} unit="%" />
+      <Stat k={t('stats.volumeFill')} value={fmt(result.volumeFill, 1)} unit="%" />
+      <Stat k={t('stats.totalHeight')} value={fmt(result.totalHeight)} unit="mm" />
       <div className="stat">
-        <div className="k">Gross weight</div>
+        <div className="k">{t('stats.grossWeight')}</div>
         <div className="v">
           {fmt(result.grossWeight, 1)} <small>kg</small>
           {result.accessoriesWeight > 0 && (
             <>
               {' '}
-              <small>incl. {fmt(result.accessoriesWeight, 1)} film/posts</small>
+              <small>{t('stats.inclAccessories', { n: fmt(result.accessoriesWeight, 1) })}</small>
             </>
           )}
         </div>
       </div>
-      <Stat k="Capacity used" value={fmt(result.weightUtil, 0)} unit="%" />
+      <Stat k={t('stats.capacityUsed')} value={fmt(result.weightUtil, 0)} unit="%" />
       <div className="stat">
-        <div className="k">Limiting</div>
+        <div className="k">{t('stats.limiting')}</div>
         <div className="v">
           <span style={{ fontSize: 13 }}>{result.limitingLabel}</span>
         </div>

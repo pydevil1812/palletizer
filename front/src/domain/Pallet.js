@@ -6,8 +6,4 @@ export class Pallet {
     this.deckHeight = deckHeight;
     this.loadCapacity = loadCapacity;
   }
-
-  get footprintArea() {
-    return this.length * this.width;
-  }
 }

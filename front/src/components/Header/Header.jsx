@@ -1,44 +1,88 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { SettingsPopover } from './SettingsPopover.jsx';
+import { useLang } from '../../i18n/LangContext.jsx';
 
-export function Header({ onLoad, onSave, onCompute }) {
-  const fileInputRef = useRef(null);
+export function Header({
+  onLoad,
+  onSave,
+  onCompute,
+  onExportPdf,
+  onExportXlsx,
+  onPrint,
+  onOpenHistory,
+  theme,
+  onToggleTheme,
+  isComputing,
+  username,
+  isAdmin,
+  onLogout,
+  onOpenAdmin,
+}) {
+  const { t } = useLang();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const anchorRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        onLoad(JSON.parse(reader.result));
-      } catch (err) {
-        alert('Could not read JSON: ' + err.message);
-      }
+  useEffect(() => {
+    if (!settingsOpen) return undefined;
+    const onDocMouseDown = (e) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target)) setSettingsOpen(false);
     };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [settingsOpen]);
 
   return (
     <header className="app">
-      <h1>📦 Pallet Stacking Studio</h1>
-      <span className="sub">box → pallet layout · rotatable 3D · exportable report</span>
+      <div className="settingsAnchor" ref={anchorRef}>
+        <button
+          className="ghost iconbtn"
+          title={t('header.settingsTitle')}
+          aria-label={t('header.settingsTitle')}
+          onClick={() => setSettingsOpen((o) => !o)}
+        >
+          ⚙
+        </button>
+        {settingsOpen && (
+          <SettingsPopover
+            onLoad={(json) => {
+              onLoad(json);
+              setSettingsOpen(false);
+            }}
+            onSave={onSave}
+            onExportPdf={onExportPdf}
+            onExportXlsx={onExportXlsx}
+            onPrint={onPrint}
+            onOpenHistory={() => {
+              setSettingsOpen(false);
+              onOpenHistory();
+            }}
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+          />
+        )}
+      </div>
+      <h1>📦 {t('header.title')}</h1>
+      <span className="sub">{t('header.subtitle')}</span>
       <span className="spacer"></span>
-      <button className="ghost" title="Load a saved JSON configuration" onClick={() => fileInputRef.current.click()}>
-        ⤓ Load JSON
+      <div className="header-user">
+        <span className="header-username muted">{username}</span>
+        {isAdmin && (
+          <button className="ghost" onClick={onOpenAdmin} title={t('header.adminTitle')}>
+            {t('header.admin')}
+          </button>
+        )}
+        <button className="ghost" onClick={onLogout} title={t('header.signOutTitle')}>
+          {t('header.signOut')}
+        </button>
+      </div>
+      <button
+        className="primary"
+        title={t('header.computeTitle')}
+        onClick={onCompute}
+        disabled={isComputing}
+      >
+        {isComputing ? t('header.computing') : t('header.compute')}
       </button>
-      <button className="ghost" title="Save current inputs as JSON (compatible with the Python CLI)" onClick={onSave}>
-        ⤒ Save JSON
-      </button>
-      <button className="primary" title="Recalculate the stacking layout" onClick={onCompute}>
-        ▶ Compute
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="application/json,.json"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
     </header>
   );
 }
