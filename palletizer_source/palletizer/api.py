@@ -11,6 +11,8 @@ own — it only reads and displays fields.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Dict, List
 
 from .models import (
@@ -208,6 +210,38 @@ def _serialize_result(result: StackingResult) -> Dict:
         "limitingLabel": _LIMITING_LABELS.get(result.limiting, "—"),
         "boxesPerLayer": [l.count for l in result.layers],
     }
+
+
+def cache_key(data: Dict) -> str:
+    """Return a stable hash identifying a compute request. Built from the
+    *normalized* config (via `build_config`/`_serialize_config`) so that
+    requests differing only in number formatting ("100" vs 100) or JSON key
+    order map to the same key, while any parameter that actually changes the
+    layout yields a different key.
+
+    Box/pallet *names* are deliberately excluded: they don't affect the
+    layout, so requests with the same dimensions but different names share a
+    cached computation. On a cache hit the caller should apply the current
+    request's names via `apply_names`."""
+    config = _serialize_config(build_config(data))
+    config["box"].pop("name", None)
+    config["pallet"].pop("name", None)
+    canonical = json.dumps(config, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def apply_names(result: Dict, data: Dict) -> Dict:
+    """Overwrite box/pallet names in a (possibly cached) result with the names
+    from the current request. Needed because names are excluded from the cache
+    key, so a cached result may carry the name from an earlier request."""
+    config = build_config(data)
+    for variant in result.get("variants", []):
+        cfg = variant.get("result", {}).get("config", {})
+        if isinstance(cfg.get("box"), dict):
+            cfg["box"]["name"] = config.box.name
+        if isinstance(cfg.get("pallet"), dict):
+            cfg["pallet"]["name"] = config.pallet.name
+    return result
 
 
 def compute_variants(data: Dict) -> Dict:

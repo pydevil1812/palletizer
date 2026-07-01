@@ -69,6 +69,16 @@ def init_db(db_path: str = DB_PATH) -> None:
         cols = [row[1] for row in conn.execute("PRAGMA table_info(queries)").fetchall()]
         if 'username' not in cols:
             conn.execute("ALTER TABLE queries ADD COLUMN username TEXT DEFAULT ''")
+        # Cache of computed results keyed by a canonical hash of the input
+        # parameters, so identical requests are served without recomputing.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS result_cache (
+                cache_key   TEXT PRIMARY KEY,
+                result_json TEXT NOT NULL,
+                created_at  TEXT NOT NULL,
+                hits        INTEGER NOT NULL DEFAULT 0
+            )
+        """)
         conn.commit()
 
 
@@ -189,4 +199,42 @@ def delete_query(query_id: int, db_path: str = DB_PATH) -> None:
 def clear_history(db_path: str = DB_PATH) -> None:
     with _connect(db_path) as conn:
         conn.execute("DELETE FROM queries")
+        conn.commit()
+
+
+# ── Result cache ──────────────────────────────────────────────────────────────
+
+def get_cached_result(cache_key: str, db_path: str = DB_PATH) -> Optional[Dict]:
+    """Return the previously computed result for `cache_key`, or None if the
+    parameters have not been computed before. Records a cache hit."""
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT result_json FROM result_cache WHERE cache_key=?", (cache_key,)
+        ).fetchone()
+        if row is None:
+            return None
+        conn.execute(
+            "UPDATE result_cache SET hits = hits + 1 WHERE cache_key=?", (cache_key,)
+        )
+        conn.commit()
+        return json.loads(row["result_json"])
+
+
+def save_cached_result(cache_key: str, result: Dict, db_path: str = DB_PATH) -> None:
+    """Store (or overwrite) the computed result for `cache_key`."""
+    init_db(db_path)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with _connect(db_path) as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO result_cache (cache_key, result_json, created_at, hits) "
+            "VALUES (?, ?, ?, COALESCE((SELECT hits FROM result_cache WHERE cache_key=?), 0))",
+            (cache_key, json.dumps(result), now, cache_key),
+        )
+        conn.commit()
+
+
+def clear_result_cache(db_path: str = DB_PATH) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("DELETE FROM result_cache")
         conn.commit()

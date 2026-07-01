@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from palletizer.api import compute_variants
+from palletizer.api import apply_names, cache_key, compute_variants
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
@@ -219,6 +219,16 @@ def admin_clear_history():
     return '', 204
 
 
+# ── Admin: result cache ───────────────────────────────────────────────────────
+
+@app.delete('/api/admin/cache')
+@require_admin
+def admin_clear_cache():
+    """Drop all cached compute results (e.g. after an algorithm change)."""
+    history.clear_result_cache()
+    return '', 204
+
+
 # ── History (auth required) ───────────────────────────────────────────────────
 
 @app.get('/api/history')
@@ -274,9 +284,22 @@ def clear_history():
 @require_auth
 def compute():
     data = request.get_json(force=True, silent=True) or {}
+
+    # Serve a previously computed result for identical parameters instead of
+    # recalculating (see palletizer.history result_cache).
+    key = cache_key(data)
+    cached = history.get_cached_result(key)
+    if cached is not None:
+        apply_names(cached, data)  # names aren't part of the key
+        cached['cached'] = True
+        return jsonify(cached)
+
     result = compute_variants(data)
     if 'errors' in result:
         return jsonify(result), 400
+
+    history.save_cached_result(key, result)
+    result['cached'] = False
     return jsonify(result)
 
 
