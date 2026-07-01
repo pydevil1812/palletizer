@@ -150,6 +150,11 @@ export const ru = {
     inclAccessories: 'вкл. {n} плёнка/стойки',
     capacityUsed: 'Исп. грузоподъёмности',
     limiting: 'Ограничение',
+    limitingReasons: {
+      height: 'по высоте',
+      weight: 'по весу',
+      pattern: 'по площади укладки',
+    },
   },
   toolbar: {
     tab3d: '3D',

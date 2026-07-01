@@ -150,6 +150,11 @@ export const en = {
     inclAccessories: 'incl. {n} film/posts',
     capacityUsed: 'Capacity used',
     limiting: 'Limiting',
+    limitingReasons: {
+      height: 'height-limited',
+      weight: 'weight-limited',
+      pattern: 'footprint-limited',
+    },
   },
   toolbar: {
     tab3d: '3D',

@@ -52,7 +52,7 @@ export function StatsBar({ result }) {
       <div className="stat">
         <div className="k">{t('stats.limiting')}</div>
         <div className="v">
-          <span style={{ fontSize: 13 }}>{result.limitingLabel}</span>
+          <span style={{ fontSize: 13 }}>{t(`stats.limitingReasons.${result.limiting}`)}</span>
         </div>
       </div>
     </div>

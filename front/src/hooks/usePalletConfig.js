@@ -3,24 +3,9 @@ import { PalletConfig } from '../domain/PalletConfig.js';
 import { ConfigSerializer } from '../domain/ConfigSerializer.js';
 import { EXAMPLE_CONFIG_JSON } from '../domain/ExampleConfig.js';
 
-// Mirrors the hardcoded default input values from the original markup exactly
-// (additional elements start disabled — only "Reset example" enables them).
-const DEFAULT_STATE = {
-  box: { name: 'Carton A', length: 400, width: 300, height: 250, weight: 8.5 },
-  pallet: { name: 'EUR pallet (1200x800)', length: 1200, width: 800, deckHeight: 150, loadCapacity: 700 },
-  maxStackHeight: 1800,
-  orientationFlags: { allowRotateX: false, allowRotateY: false, allowRotateZ: true },
-  additional: {
-    enabled: false,
-    useSpacers: false,
-    spacerThicknessMm: 5,
-    spacerWeightKg: 0.3,
-    useCornerPosts: false,
-    cornerPostWeightKg: 0,
-    useFilm: false,
-    filmWeightKg: 1.2,
-  },
-};
+// Derived from EXAMPLE_CONFIG_JSON so it stays a single source of truth —
+// editing that file changes both the initial form state and "Reset example".
+const DEFAULT_STATE = ConfigSerializer.fromImportedJSON(EXAMPLE_CONFIG_JSON);
 
 function mergePatch(prev, patch) {
   return {
