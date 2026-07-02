@@ -178,6 +178,22 @@ table.boxes tbody tr:hover{background:#1a2533}
 .history-table .row-delete:hover{border-color:var(--danger); color:var(--danger)}
 .history-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line)}
 
+/* compare modal (side-by-side layout comparison) */
+.compare-modal{width:min(1400px, 96vw); max-height:90vh; overflow-y:auto}
+.compare-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; margin-top:10px}
+.compare-panel{
+  display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px;
+  overflow:hidden; background:var(--panel2); min-height:420px;
+}
+.compare-panel-head{
+  display:flex; justify-content:space-between; align-items:baseline; padding:8px 12px;
+  border-bottom:1px solid var(--line); font-size:12px; color:var(--muted);
+}
+.compare-panel-3d{flex:1 1 260px; min-height:220px}
+.compare-panel-loading{padding:24px; text-align:center; color:var(--muted)}
+.cmp-table{width:100%; margin-top:16px}
+.cmp-best{color:var(--accent2); font-weight:700}
+
 /* variant picker (Options button, header top-right next to Compute) */
 .variant-fab-anchor{position:relative}
 .variant-dropdown{

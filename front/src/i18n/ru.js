@@ -47,6 +47,16 @@ export const ru = {
     deleteHistory: 'Удалить историю',
     open: 'Открыть',
     close: 'Закрыть',
+    colCompare: 'Сравнить',
+  },
+  compare: {
+    title: 'Сравнение вариантов',
+    openButton: 'Сравнить ({n})',
+    loading: 'Расчёт…',
+    loadError: 'Не удалось загрузить: {detail}',
+    close: 'Закрыть',
+    rowBoxSize: 'Размер короба, мм',
+    rowPallet: 'Паллета',
   },
   variants: {
     arrangement: 'Вариант {current}/{total}',

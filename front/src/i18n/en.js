@@ -47,6 +47,16 @@ export const en = {
     deleteHistory: 'Delete history',
     open: 'Open',
     close: 'Close',
+    colCompare: 'Compare',
+  },
+  compare: {
+    title: 'Compare layouts',
+    openButton: 'Compare ({n})',
+    loading: 'Computing…',
+    loadError: 'Failed to load: {detail}',
+    close: 'Close',
+    rowBoxSize: 'Box size, mm',
+    rowPallet: 'Pallet',
   },
   variants: {
     arrangement: 'Arrangement {current}/{total}',

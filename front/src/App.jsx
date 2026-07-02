@@ -13,6 +13,7 @@ import { ExportService } from './services/ExportService.js';
 import { ConfigSerializer } from './domain/ConfigSerializer.js';
 import { Header } from './components/Header/Header.jsx';
 import { HistoryModal } from './components/Header/HistoryModal.jsx';
+import { CompareModal } from './components/Header/CompareModal.jsx';
 import { Sidebar } from './components/Sidebar/Sidebar.jsx';
 import { MainPanel } from './components/Main/MainPanel.jsx';
 import { RecommendationsPanel } from './components/Main/RecommendationsPanel.jsx';
@@ -31,6 +32,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('3d');
   const [leftPanel, setLeftPanel] = useState('params');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [compareIds, setCompareIds] = useState([]);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [topLayerIndex, setTopLayerIndex] = useState(0);
   const [sideAxis, setSideAxis] = useState('length');
@@ -115,6 +118,21 @@ export default function App() {
 
   const handleOpenHistory = () => setHistoryOpen(true);
   const handleCloseHistory = () => setHistoryOpen(false);
+  const handleToggleCompare = (id) => {
+    setCompareIds((cur) => {
+      if (cur.includes(id)) return cur.filter((x) => x !== id);
+      if (cur.length >= 3) return cur;
+      return [...cur, id];
+    });
+  };
+  const handleOpenCompare = () => {
+    setCompareOpen(true);
+    setHistoryOpen(false);
+  };
+  const handleCloseCompare = () => {
+    setCompareOpen(false);
+    setCompareIds([]);
+  };
   const handleOpenSelectedHistory = async () => {
     if (history.selectedId == null) return;
     const cfg = await history.getConfig(history.selectedId);
@@ -245,6 +263,16 @@ export default function App() {
         onClose={handleCloseHistory}
         onRefresh={history.refresh}
         isAdmin={auth.isAdmin}
+        compareIds={compareIds}
+        onToggleCompare={handleToggleCompare}
+        onOpenCompare={handleOpenCompare}
+      />
+
+      <CompareModal
+        open={compareOpen}
+        ids={compareIds}
+        historyRows={history.entries}
+        onClose={handleCloseCompare}
       />
     </>
   );

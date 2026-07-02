@@ -15,6 +15,9 @@ export function HistoryModal({
   onClose,
   onRefresh,
   isAdmin,
+  compareIds,
+  onToggleCompare,
+  onOpenCompare,
 }) {
   const { t } = useLang();
 
@@ -52,6 +55,7 @@ export function HistoryModal({
             <table className="boxes history-table">
               <thead>
                 <tr>
+                  <th title={t('history.colCompare')}></th>
                   <th className="l">{t('history.colDate')}</th>
                   <th className="l">{t('history.colUser')}</th>
                   <th className="l">{t('history.colLabel')}</th>
@@ -70,6 +74,15 @@ export function HistoryModal({
                     className={row.id === selectedId ? 'selected' : ''}
                     onClick={() => onSelect(row.id)}
                   >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        title={t('history.colCompare')}
+                        checked={compareIds.includes(row.id)}
+                        disabled={!compareIds.includes(row.id) && compareIds.length >= 3}
+                        onChange={() => onToggleCompare(row.id)}
+                      />
+                    </td>
                     <td className="l">{row.created_at}</td>
                     <td className="l">{row.username || '–'}</td>
                     <td className="l">{row.label}</td>
@@ -106,6 +119,9 @@ export function HistoryModal({
               {t('history.deleteHistory')}
             </button>
           )}
+          <button className="primary" disabled={compareIds.length < 2} onClick={onOpenCompare}>
+            {t('compare.openButton', { n: compareIds.length })}
+          </button>
           <button className="primary" disabled={selectedId == null} onClick={onOpenSelected}>
             {t('history.open')}
           </button>
