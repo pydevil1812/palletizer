@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../services/AuthService.js';
 import { fmt } from '../../utils/format.js';
 import { useLang } from '../../i18n/LangContext.jsx';
+import { CatalogTab } from './CatalogTab.jsx';
 
 async function apiRequest(url, options = {}) {
   const res = await apiFetch(url, {
@@ -57,7 +58,7 @@ export function AdminPage({ onBack, currentUsername }) {
 
   useEffect(() => {
     if (tab === 'users') loadUsers();
-    else loadHistory();
+    else if (tab === 'history') loadHistory();
   }, [tab, loadUsers, loadHistory]);
 
   const deleteUser = async (id) => {
@@ -158,15 +159,21 @@ export function AdminPage({ onBack, currentUsername }) {
         >
           {t('admin.tabHistory')}
         </button>
+        <button
+          className={`admin-tab${tab === 'catalog' ? ' active' : ''}`}
+          onClick={() => setTab('catalog')}
+        >
+          {t('admin.tabCatalog')}
+        </button>
       </div>
 
       <div className="admin-content">
-        {error && (
+        {error && tab !== 'catalog' && (
           <div className="banner err" style={{ display: 'block', marginBottom: 12 }}>
             {error}
           </div>
         )}
-        {loading && <p className="muted">{t('admin.loading')}</p>}
+        {loading && tab !== 'catalog' && <p className="muted">{t('admin.loading')}</p>}
 
         {/* ── Users ── */}
         {tab === 'users' && !loading && (
@@ -299,6 +306,9 @@ export function AdminPage({ onBack, currentUsername }) {
           </div>
           </>
         )}
+
+        {/* ── Catalogs ── */}
+        {tab === 'catalog' && <CatalogTab />}
 
         {/* ── History ── */}
         {tab === 'history' && !loading && (

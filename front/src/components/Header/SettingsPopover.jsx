@@ -1,7 +1,20 @@
 import { useRef } from 'react';
 import { useLang } from '../../i18n/LangContext.jsx';
 
-export function SettingsPopover({ onLoad, onSave, onExportPdf, onExportXlsx, onPrint, onOpenHistory, theme, onToggleTheme }) {
+export function SettingsPopover({
+  onLoad,
+  onSave,
+  onExportPdf,
+  onExportXlsx,
+  onPrint,
+  onOpenHistory,
+  theme,
+  onToggleTheme,
+  inputMode,
+  onChangeInputMode,
+  isAdmin,
+  onSaveTemplate,
+}) {
   const { t, lang, setLang } = useLang();
   const fileInputRef = useRef(null);
 
@@ -25,6 +38,26 @@ export function SettingsPopover({ onLoad, onSave, onExportPdf, onExportXlsx, onP
   return (
     <div className="popover settings-popover">
       <div className="popover-section">
+        <h3>{t('settings.inputMode')}</h3>
+        <button
+          className="ghost"
+          title={t('settings.manualModeTitle')}
+          onClick={() => onChangeInputMode('manual')}
+          style={inputMode === 'manual' ? activeLangStyle : {}}
+        >
+          {t('settings.manualMode')}
+        </button>
+        <button
+          className="ghost"
+          title={t('settings.templateModeTitle')}
+          onClick={() => onChangeInputMode('template')}
+          style={inputMode === 'template' ? activeLangStyle : {}}
+        >
+          {t('settings.templateMode')}
+        </button>
+      </div>
+
+      <div className="popover-section">
         <h3>{t('settings.configuration')}</h3>
         <button className="ghost" title={t('settings.loadJsonTitle')} onClick={() => fileInputRef.current.click()}>
           {t('settings.loadJson')}
@@ -32,6 +65,11 @@ export function SettingsPopover({ onLoad, onSave, onExportPdf, onExportXlsx, onP
         <button className="ghost" title={t('settings.saveJsonTitle')} onClick={onSave}>
           {t('settings.saveJson')}
         </button>
+        {isAdmin && (
+          <button className="ghost" title={t('settings.saveTemplateTitle')} onClick={onSaveTemplate}>
+            {t('settings.saveTemplate')}
+          </button>
+        )}
         <input
           ref={fileInputRef}
           type="file"

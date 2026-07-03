@@ -15,6 +15,15 @@ _default_db = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
                             "palletizer_history.db")
 DB_PATH = os.getenv("DB_PATH") or _default_db
 
+# Typical pallet types seeded into a fresh catalog:
+# (name, length mm, width mm, deck height mm, load capacity kg)
+STANDARD_PALLETS = [
+    ("EUR / EPAL (1200×800)",       1200,  800, 144, 1500),
+    ("FIN (1200×1000)",             1200, 1000, 145, 2000),
+    ("USD / GMA (1219×1016)",       1219, 1016, 150, 1360),
+    ("Industrial (1200×1200)",      1200, 1200, 150, 2000),
+]
+
 
 def _connect(db_path: str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
@@ -79,6 +88,45 @@ def init_db(db_path: str = DB_PATH) -> None:
                 hits        INTEGER NOT NULL DEFAULT 0
             )
         """)
+        # Admin-managed catalogs used by the app's "template mode": users pick
+        # boxes/pallets from these instead of typing dimensions by hand.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS catalog_pallets (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                name          TEXT UNIQUE NOT NULL,
+                length        REAL NOT NULL,
+                width         REAL NOT NULL,
+                deck_height   REAL NOT NULL DEFAULT 145,
+                load_capacity REAL NOT NULL DEFAULT 1500,
+                is_standard   INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS catalog_boxes (
+                id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                sku    TEXT DEFAULT '',
+                name   TEXT NOT NULL,
+                length REAL NOT NULL,
+                width  REAL NOT NULL,
+                height REAL NOT NULL,
+                weight REAL NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS catalog_templates (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT NOT NULL,
+                created_at  TEXT NOT NULL,
+                config_json TEXT NOT NULL
+            )
+        """)
+        # Seed the standard pallet types once, on a fresh catalog.
+        if conn.execute("SELECT COUNT(*) FROM catalog_pallets").fetchone()[0] == 0:
+            conn.executemany(
+                "INSERT INTO catalog_pallets (name, length, width, deck_height, load_capacity, is_standard) "
+                "VALUES (?,?,?,?,?,1)",
+                STANDARD_PALLETS,
+            )
         conn.commit()
 
 
@@ -237,4 +285,167 @@ def save_cached_result(cache_key: str, result: Dict, db_path: str = DB_PATH) -> 
 def clear_result_cache(db_path: str = DB_PATH) -> None:
     with _connect(db_path) as conn:
         conn.execute("DELETE FROM result_cache")
+        conn.commit()
+
+
+# ── Catalogs (template mode) ──────────────────────────────────────────────────
+
+def list_catalog_pallets(db_path: str = DB_PATH) -> List[sqlite3.Row]:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        return conn.execute("SELECT * FROM catalog_pallets ORDER BY is_standard DESC, name").fetchall()
+
+
+def create_catalog_pallet(name: str, length: float, width: float,
+                          deck_height: float, load_capacity: float,
+                          db_path: str = DB_PATH) -> Optional[int]:
+    """Insert a pallet type. Returns the new row id, or None if name is taken."""
+    init_db(db_path)
+    try:
+        with _connect(db_path) as conn:
+            cur = conn.execute(
+                "INSERT INTO catalog_pallets (name, length, width, deck_height, load_capacity) "
+                "VALUES (?,?,?,?,?)",
+                (name, length, width, deck_height, load_capacity),
+            )
+            conn.commit()
+            return cur.lastrowid
+    except sqlite3.IntegrityError:
+        return None
+
+
+def update_catalog_pallet(pallet_id: int, name: str, length: float, width: float,
+                          deck_height: float, load_capacity: float,
+                          db_path: str = DB_PATH) -> bool:
+    try:
+        with _connect(db_path) as conn:
+            conn.execute(
+                "UPDATE catalog_pallets SET name=?, length=?, width=?, deck_height=?, load_capacity=? "
+                "WHERE id=?",
+                (name, length, width, deck_height, load_capacity, pallet_id),
+            )
+            conn.commit()
+            return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def delete_catalog_pallet(pallet_id: int, db_path: str = DB_PATH) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("DELETE FROM catalog_pallets WHERE id=?", (pallet_id,))
+        conn.commit()
+
+
+def import_catalog_pallets(rows: List[Dict], replace: bool = False,
+                           db_path: str = DB_PATH) -> int:
+    """Bulk-insert pallet rows (e.g. parsed from CSV/Excel). Rows whose name
+    already exists are updated in place. Returns the number of rows applied."""
+    init_db(db_path)
+    count = 0
+    with _connect(db_path) as conn:
+        if replace:
+            conn.execute("DELETE FROM catalog_pallets")
+        for r in rows:
+            conn.execute(
+                "INSERT INTO catalog_pallets (name, length, width, deck_height, load_capacity) "
+                "VALUES (?,?,?,?,?) "
+                "ON CONFLICT(name) DO UPDATE SET length=excluded.length, width=excluded.width, "
+                "deck_height=excluded.deck_height, load_capacity=excluded.load_capacity",
+                (r["name"], r["length"], r["width"],
+                 r.get("deck_height", 145), r.get("load_capacity", 1500)),
+            )
+            count += 1
+        conn.commit()
+    return count
+
+
+def list_catalog_boxes(db_path: str = DB_PATH) -> List[sqlite3.Row]:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        return conn.execute("SELECT * FROM catalog_boxes ORDER BY name").fetchall()
+
+
+def create_catalog_box(sku: str, name: str, length: float, width: float,
+                       height: float, weight: float, db_path: str = DB_PATH) -> int:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        cur = conn.execute(
+            "INSERT INTO catalog_boxes (sku, name, length, width, height, weight) "
+            "VALUES (?,?,?,?,?,?)",
+            (sku, name, length, width, height, weight),
+        )
+        conn.commit()
+        return cur.lastrowid
+
+
+def update_catalog_box(box_id: int, sku: str, name: str, length: float, width: float,
+                       height: float, weight: float, db_path: str = DB_PATH) -> None:
+    with _connect(db_path) as conn:
+        conn.execute(
+            "UPDATE catalog_boxes SET sku=?, name=?, length=?, width=?, height=?, weight=? "
+            "WHERE id=?",
+            (sku, name, length, width, height, weight, box_id),
+        )
+        conn.commit()
+
+
+def delete_catalog_box(box_id: int, db_path: str = DB_PATH) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("DELETE FROM catalog_boxes WHERE id=?", (box_id,))
+        conn.commit()
+
+
+def import_catalog_boxes(rows: List[Dict], replace: bool = False,
+                         db_path: str = DB_PATH) -> int:
+    """Bulk-insert box/SKU rows (e.g. parsed from CSV/Excel)."""
+    init_db(db_path)
+    count = 0
+    with _connect(db_path) as conn:
+        if replace:
+            conn.execute("DELETE FROM catalog_boxes")
+        for r in rows:
+            conn.execute(
+                "INSERT INTO catalog_boxes (sku, name, length, width, height, weight) "
+                "VALUES (?,?,?,?,?,?)",
+                (r.get("sku", ""), r["name"], r["length"], r["width"],
+                 r["height"], r.get("weight", 0)),
+            )
+            count += 1
+        conn.commit()
+    return count
+
+
+# ── Configuration templates ───────────────────────────────────────────────────
+
+def list_templates(db_path: str = DB_PATH) -> List[sqlite3.Row]:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        return conn.execute(
+            "SELECT id, name, created_at FROM catalog_templates ORDER BY name"
+        ).fetchall()
+
+
+def create_template(name: str, config_dict: Dict, db_path: str = DB_PATH) -> int:
+    init_db(db_path)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with _connect(db_path) as conn:
+        cur = conn.execute(
+            "INSERT INTO catalog_templates (name, created_at, config_json) VALUES (?,?,?)",
+            (name, now, json.dumps(config_dict)),
+        )
+        conn.commit()
+        return cur.lastrowid
+
+
+def get_template_config(template_id: int, db_path: str = DB_PATH) -> Optional[Dict]:
+    with _connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT config_json FROM catalog_templates WHERE id=?", (template_id,)
+        ).fetchone()
+        return json.loads(row["config_json"]) if row else None
+
+
+def delete_template(template_id: int, db_path: str = DB_PATH) -> None:
+    with _connect(db_path) as conn:
+        conn.execute("DELETE FROM catalog_templates WHERE id=?", (template_id,))
         conn.commit()
