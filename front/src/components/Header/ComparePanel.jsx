@@ -3,11 +3,11 @@ import { useThreeScene } from '../../hooks/useThreeScene.js';
 import { StatsBar } from '../Main/StatsBar.jsx';
 import { useLang } from '../../i18n/LangContext.jsx';
 
-export function ComparePanel({ item }) {
+export function ComparePanel({ item, theme }) {
   const { t } = useLang();
   const [hostEl, setHostEl] = useState(null);
   const hostRef = useCallback((el) => setHostEl(el), []);
-  const threeScene = useThreeScene(hostEl);
+  const threeScene = useThreeScene(hostEl, theme);
 
   useEffect(() => {
     if (threeScene.ready && item.status === 'ok' && item.result) threeScene.build(item.result);

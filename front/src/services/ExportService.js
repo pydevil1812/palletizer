@@ -3,6 +3,18 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { ConfigSerializer } from '../domain/ConfigSerializer.js';
 import { fmt } from '../utils/format.js';
+import { PT_SANS_REGULAR_BASE64, PT_SANS_BOLD_BASE64 } from './fonts/PTSans.js';
+
+// jsPDF's built-in fonts (Helvetica etc.) only cover WinAnsi glyphs, so Cyrillic
+// text (recommendations, translated labels) renders as garbled symbols unless a
+// Unicode-capable font is embedded. PT Sans covers Latin+Cyrillic.
+function registerPdfFont(doc) {
+  doc.addFileToVFS('PTSans-Regular.ttf', PT_SANS_REGULAR_BASE64);
+  doc.addFont('PTSans-Regular.ttf', 'PTSans', 'normal');
+  doc.addFileToVFS('PTSans-Bold.ttf', PT_SANS_BOLD_BASE64);
+  doc.addFont('PTSans-Bold.ttf', 'PTSans', 'bold');
+  doc.setFont('PTSans', 'normal');
+}
 
 /**
  * All "turn a StackResult into a downloadable artifact" concerns (JSON config,
@@ -99,6 +111,7 @@ export class ExportService {
 
   static exportPdf(result, images) {
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    registerPdfFont(doc);
     const M = 40;
     const PW = doc.internal.pageSize.getWidth();
     doc.setFontSize(17);
@@ -112,20 +125,21 @@ export class ExportService {
       startY: 76,
       head: [['Metric', 'Value']],
       body: this.summaryRows(result),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [40, 55, 75] },
+      styles: { font: 'PTSans', fontSize: 9 },
+      headStyles: { font: 'PTSans', fillColor: [40, 55, 75] },
       margin: { left: M, right: M },
     });
 
     let y = doc.lastAutoTable.finalY + 18;
     if (result.recommendations.length) {
+      doc.setFont('PTSans', 'normal');
       doc.setFontSize(12);
       doc.text('Recommendations', M, y);
       y += 6;
       doc.autoTable({
         startY: y,
         body: result.recommendations.map((r, i) => [`${i + 1}. ${r}`]),
-        styles: { fontSize: 9, cellPadding: 4 },
+        styles: { font: 'PTSans', fontSize: 9, cellPadding: 4 },
         theme: 'plain',
         margin: { left: M, right: M },
       });
@@ -146,6 +160,7 @@ export class ExportService {
         doc.addPage();
         y = 46;
       }
+      doc.setFont('PTSans', 'normal');
       doc.setFontSize(12);
       doc.text(label, M, y);
       y += 8;
@@ -154,6 +169,7 @@ export class ExportService {
     });
 
     doc.addPage();
+    doc.setFont('PTSans', 'normal');
     doc.setFontSize(12);
     doc.text('Box coordinates', M, 46);
     doc.autoTable({
@@ -171,8 +187,8 @@ export class ExportService {
         b.orientation,
         result.config.box.weight,
       ]),
-      styles: { fontSize: 7.5 },
-      headStyles: { fillColor: [40, 55, 75] },
+      styles: { font: 'PTSans', fontSize: 7.5 },
+      headStyles: { font: 'PTSans', fillColor: [40, 55, 75] },
       margin: { left: M, right: M },
     });
 

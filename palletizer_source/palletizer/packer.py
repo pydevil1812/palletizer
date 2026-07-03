@@ -141,6 +141,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
             break
 
         best = None
+        weight_rejected = False
         for orient in orientations:
             if orient["dz"] > remaining_h or orient["dz"] <= 0:
                 continue
@@ -154,6 +155,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
             if layer_weight > remaining_w:
                 max_by_weight = int(remaining_w // box.weight) if box.weight > 0 else count
                 if max_by_weight <= 0:
+                    weight_rejected = True
                     continue
                 rects = rects[:max_by_weight]
                 count = max_by_weight
@@ -162,7 +164,12 @@ def stack_layers(config: StackingConfig) -> StackingResult:
                 best = {"orient": orient, "rects": rects, "count": count, "weight": layer_weight}
 
         if not best or best["count"] == 0:
-            limiting = "pattern" if layer_idx == 0 else "height"
+            if layer_idx == 0:
+                limiting = "pattern"
+            elif weight_rejected:
+                limiting = "weight"
+            else:
+                limiting = "height"
             break
 
         z_cursor += spacer_h

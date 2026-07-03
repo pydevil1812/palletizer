@@ -50,7 +50,7 @@ export default function App() {
   const canvasSideRef = useRef(null);
   const printAreaRef = useRef(null);
 
-  const threeScene = useThreeScene(hostEl);
+  const threeScene = useThreeScene(hostEl, theme);
   const topRenderer = useMemo(() => new CanvasTopRenderer(), []);
   const sideRenderer = useMemo(() => new CanvasSideRenderer(), []);
 
@@ -273,6 +273,7 @@ export default function App() {
         ids={compareIds}
         historyRows={history.entries}
         onClose={handleCloseCompare}
+        theme={theme}
       />
     </>
   );

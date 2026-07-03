@@ -6,13 +6,12 @@
   --rowhover:#1a2533; --swatchborder:rgba(255,255,255,.25);
   --bannererrbg:#3a1d1a; --bannererrtext:#ffd6cf;
   --bannerwarnbg:#3a2f17; --bannerwarntext:#ffe7bd;
-  /* Fixed light-on-dark text for controls overlaid on the 3D/2D canvas
-     "stage", which intentionally stays dark in both themes. */
-  --stagetext:#e6edf5; --stagemuted:#93a4b8;
+  /* Background of the 3D/2D canvas "stage" and the text/overlay of
+     controls floating on it; all follow the active theme. */
+  --stagebg:#0c1118; --stagetext:#e6edf5; --stagemuted:#93a4b8;
+  --stageoverlay:rgba(14,21,30,.85); --stageoverlay2:rgba(14,21,30,.55);
 }
-/* Light theme: same structure/spacing, swapped tokens only. The 3D/2D
-   viewport canvases intentionally stay dark in both themes (a fixed
-   "stage" behind the rendered scene, matching the original desktop app). */
+/* Light theme: same structure/spacing, swapped tokens only. */
 :root[data-theme="light"]{
   --bg:#f3f5f8; --panel:#ffffff; --panel2:#f0f3f7; --line:#d7dee6;
   --text:#1b2430; --muted:#5b6b7d; --accent:#2972d6; --accent2:#1f9d6c;
@@ -21,6 +20,8 @@
   --rowhover:#eaf0f7; --swatchborder:rgba(0,0,0,.2);
   --bannererrbg:#fdecea; --bannererrtext:#8a2c1d;
   --bannerwarnbg:#fdf1dc; --bannerwarntext:#7a5209;
+  --stagebg:#e9edf3; --stagetext:#1b2430; --stagemuted:#5b6b7d;
+  --stageoverlay:rgba(255,255,255,.85); --stageoverlay2:rgba(255,255,255,.6);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -99,21 +100,21 @@ details.card[open] summary::before{content:"▾ "}
 .stat .v{font-size:18px; font-weight:680; margin-top:2px}
 .stat .v small{font-size:11px; color:var(--muted); font-weight:500}
 
-.viewwrap{flex:1 1 0; position:relative; min-height:200px; overflow:hidden; background:#0c1118}
+.viewwrap{flex:1 1 0; position:relative; min-height:200px; overflow:hidden; background:var(--stagebg)}
 .view{position:absolute; inset:0; display:none}
 .view.active{display:block}
 #view3d{width:100%; height:100%}
 .view2d{display:none; width:100%; height:100%; overflow:auto; padding:14px; background:var(--panel)}
 .view2d.active{display:block}
-.view2d canvas{background:#0c1118; border:1px solid var(--line); border-radius:8px; max-width:100%}
+.view2d canvas{background:var(--stagebg); border:1px solid var(--line); border-radius:8px; max-width:100%}
 .viewbar{position:absolute; top:10px; left:10px; right:10px; display:flex; gap:8px; align-items:center; z-index:5; pointer-events:none}
 .viewbar > *{pointer-events:auto}
 .viewbar select, .viewbar .hint{
-  background:rgba(14,21,30,.85); border:1px solid var(--line); color:var(--stagetext);
+  background:var(--stageoverlay); border:1px solid var(--line); color:var(--stagetext);
   border-radius:6px; padding:5px 8px; font:inherit; font-size:12px;
 }
 .viewbar .hint{color:var(--stagemuted)}
-.viewbar button{color:var(--stagetext); background:rgba(14,21,30,.55)}
+.viewbar button{color:var(--stagetext); background:var(--stageoverlay2)}
 .viewbar button:hover{color:var(--stagetext)}
 .legend{display:flex; gap:8px; flex-wrap:wrap; padding:8px 14px; border-top:1px solid var(--line); background:var(--panel); font-size:11px; color:var(--muted)}
 .legend .sw{display:inline-flex; align-items:center; gap:5px}

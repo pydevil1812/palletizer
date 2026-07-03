@@ -4,6 +4,9 @@ import { ColorService } from './ColorService.js';
 
 const MM_TO_SCENE_UNITS = 0.01; // 1200mm pallet -> 12 scene units
 
+// Kept in sync with --stagebg in palletizer.css (Three.js can't read CSS vars).
+const STAGE_BG = { dark: 0x0c1118, light: 0xe9edf3 };
+
 /**
  * Owns the Three.js scene/camera/renderer/controls lifecycle for the 3D
  * pallet view. Kept as a plain class (not a hook) so all the imperative,
@@ -11,8 +14,9 @@ const MM_TO_SCENE_UNITS = 0.01; // 1200mm pallet -> 12 scene units
  * ever calls init/build/resize/dispose through a thin ref-based hook.
  */
 export class ThreeSceneController {
-  constructor(hostElement) {
+  constructor(hostElement, theme = 'dark') {
     this.host = hostElement;
+    this.theme = theme;
     this.scene = null;
     this.camera = null;
     this.renderer = null;
@@ -41,7 +45,7 @@ export class ThreeSceneController {
     }
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0c1118);
+    scene.background = new THREE.Color(STAGE_BG[this.theme] ?? STAGE_BG.dark);
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
@@ -163,6 +167,11 @@ export class ThreeSceneController {
 
   setAutorotate(value) {
     this.autorotate = value;
+  }
+
+  setTheme(theme) {
+    this.theme = theme;
+    if (this.scene) this.scene.background = new THREE.Color(STAGE_BG[theme] ?? STAGE_BG.dark);
   }
 
   getPng() {

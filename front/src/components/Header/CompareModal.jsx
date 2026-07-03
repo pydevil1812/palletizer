@@ -4,7 +4,7 @@ import { useLang } from '../../i18n/LangContext.jsx';
 import { ComparePanel } from './ComparePanel.jsx';
 import { CompareTable } from './CompareTable.jsx';
 
-export function CompareModal({ open, ids, historyRows, onClose }) {
+export function CompareModal({ open, ids, historyRows, onClose, theme }) {
   const { t } = useLang();
   const compare = useCompare();
   const idsKey = ids.join(',');
@@ -26,7 +26,7 @@ export function CompareModal({ open, ids, historyRows, onClose }) {
 
         <div className="compare-grid">
           {compare.items.map((item) => (
-            <ComparePanel key={item.id} item={item} />
+            <ComparePanel key={item.id} item={item} theme={theme} />
           ))}
         </div>
 
