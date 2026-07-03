@@ -116,6 +116,21 @@ def _layer_weight_budget(idx: int, additional: Optional[AdditionalElements]) -> 
     return 0.0
 
 
+def _fixed_additional_weight(additional: Optional[AdditionalElements]) -> float:
+    """One-off accessory weight not tied to a specific layer (film, corner
+    posts). Unlike spacers, these are added to the load once regardless of
+    layer count, so they're reserved up front against load_capacity instead
+    of being folded in per-layer."""
+    if not (additional and additional.enabled):
+        return 0.0
+    w = 0.0
+    if additional.use_film:
+        w += additional.film_weight_kg
+    if additional.use_corner_posts:
+        w += additional.corner_post_weight_kg
+    return w
+
+
 def stack_layers(config: StackingConfig) -> StackingResult:
     box, pallet = config.box, config.pallet
     orientations = generate_orientations(box, config.orientation_flags)
@@ -123,6 +138,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
 
     z_cursor = pallet.deck_height
     weight_used = 0.0
+    fixed_w = _fixed_additional_weight(additional)
     layers: List[LayerResult] = []
     layer_idx = 0
     max_iterations = 1000  # safety guard against pathological inputs
@@ -132,7 +148,7 @@ def stack_layers(config: StackingConfig) -> StackingResult:
         spacer_h = _layer_height_budget(layer_idx, additional)
         spacer_w = _layer_weight_budget(layer_idx, additional)
         remaining_h = config.max_stack_height - z_cursor - spacer_h
-        remaining_w = pallet.load_capacity - weight_used - spacer_w
+        remaining_w = pallet.load_capacity - weight_used - spacer_w - fixed_w
         if remaining_h <= 0:
             limiting = "height"
             break
@@ -239,7 +255,8 @@ def _finalize(config: StackingConfig, layers: List[LayerResult],
 
     height_utilization_pct = (total_height / config.max_stack_height * 100.0
                                if config.max_stack_height > 0 else 0.0)
-    weight_utilization_pct = (total_weight / pallet.load_capacity * 100.0
+    gross_weight = total_weight + _fixed_additional_weight(additional)
+    weight_utilization_pct = (gross_weight / pallet.load_capacity * 100.0
                                if pallet.load_capacity > 0 else 0.0)
 
     recommendations = _build_recommendations(config, layers, total_height, total_weight)
