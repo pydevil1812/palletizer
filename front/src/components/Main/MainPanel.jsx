@@ -35,7 +35,7 @@ export function MainPanel({
 
       <Banner type={bannerType} message={bannerMessage} />
 
-      <StatsBar result={result} />
+      {activeTab === '3d' && <StatsBar result={result} />}
 
       <div className="viewwrap">
         <ThreeDView

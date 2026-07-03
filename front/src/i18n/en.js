@@ -1,7 +1,7 @@
 export const en = {
   header: {
     settingsTitle: 'Settings',
-    title: 'Pallet Stacking Studio',
+    title: 'Палеттайзер',
     subtitle: 'box → pallet layout · rotatable 3D · exportable report',
     admin: 'Admin',
     adminTitle: 'Administration panel',

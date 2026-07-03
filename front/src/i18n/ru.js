@@ -1,7 +1,7 @@
 export const ru = {
   header: {
     settingsTitle: 'Настройки',
-    title: 'Pallet Stacking Studio',
+    title: 'Палеттайзер',
     subtitle: 'короб → схема паллеты · 3D-вращение · экспорт отчёта',
     admin: 'Администратор',
     adminTitle: 'Панель администратора',
