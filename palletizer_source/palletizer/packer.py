@@ -3,13 +3,27 @@ Packing engine.
 
 Two stages:
   1. `pack_rectangle` arranges identical a x b rectangles inside an
-     L x W footprint (one pallet layer) using an exact DP over all
-     two-type strip decompositions. For identical rectangles any valid
-     packing can be rearranged into strips without reducing the count,
-     so the DP is optimal. It enumerates every split into n_b strips of
-     height b (items a×b) plus n_a strips of height a (items b×a) in
-     both the horizontal and vertical directions, and returns the
-     arrangement with the highest count.
+     L x W footprint (one pallet layer). Two solvers cooperate:
+
+       * `_strip_rects` — exact DP over all two-type strip decompositions
+         (fast, always available, optimal within the "parallel strips"
+         class of layouts).
+       * `_five_block_pack` — the classic Pallet Loading Problem
+         decomposition (Morabito & Morales): recursively split the
+         rectangle into up to five sub-blocks — four around the edges
+         arranged pinwheel-fashion plus one in the centre — and solve each
+         block independently, memoised on raster-normalized sizes.
+         Straight guillotine cuts are the degenerate cases (x1 = x2 or
+         y1 = y2), so this strictly generalizes both the strip DP and
+         recursive guillotine cutting, and additionally finds
+         NON-guillotine layouts such as the pinwheel-with-central-hole
+         patterns that dense pallet loads often need (e.g. 17 boxes of
+         330x190 on a 1300x900 footprint, where the best guillotine
+         layout stops at 16).
+
+     The five-block search is budgeted: when the raster grid is too fine
+     (tiny box on a huge pallet) it falls back to the strip DP, so worst-
+     case behaviour never regresses below the historical algorithm.
 
   2. `stack_layers` repeatedly calls stage 1 for every allowed box
      orientation, picks the orientation that yields the most boxes for
@@ -18,6 +32,7 @@ Two stages:
 """
 from __future__ import annotations
 
+import bisect
 from typing import Dict, List, Optional, Tuple
 
 from .models import (
@@ -42,11 +57,11 @@ def _grid(L: float, W: float, a: float, b: float) -> Tuple[int, int]:
     return int(L // a), int(W // b)
 
 
-def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
-    """Exact optimal layout for identical a×b footprints on an L×W pallet.
-
-    Enumerates every two-type strip decomposition in both the horizontal
-    and vertical directions and returns the arrangement with the most boxes.
+def _strip_rects(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
+    """Exact DP over two-type strip decompositions (single split, no
+    recursion) — see the module docstring, stage 1. This is the floor/base
+    case that `pack_rectangle`'s recursive search always falls back to, so
+    it alone determines behaviour when `allow_swap` is False.
 
     Horizontal: n_b strips of height b (items a wide, b tall) +
                 n_a strips of height a (items b wide, a tall).
@@ -100,6 +115,168 @@ def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool) -> 
                 _update(rects)
 
     return best
+
+
+def _raster_points(dim: float, a: float, b: float) -> List[float]:
+    """All conic combinations r*a + s*b (r, s >= 0) that fit within `dim`.
+    These are the only x/y positions where a block boundary can usefully
+    sit, which is what keeps the five-block search space small."""
+    vals = {0.0}
+    frontier = [0.0]
+    while frontier:
+        nxt = []
+        for v in frontier:
+            for step in (a, b):
+                nv = round(v + step, 6)
+                if nv <= dim and nv not in vals:
+                    vals.add(nv)
+                    nxt.append(nv)
+        frontier = nxt
+    return sorted(vals)
+
+
+def _normalize(dim: float, rast: List[float]) -> float:
+    """Largest raster value <= dim. Packing an l x w area is equivalent to
+    packing normalize(l) x normalize(w): the trimmed margin can't hold any
+    box edge anyway. This collapses the recursion onto few distinct states."""
+    i = bisect.bisect_right(rast, dim) - 1
+    return rast[i] if i >= 0 else 0.0
+
+
+# Budgets for the five-block search. `_FIVE_BLOCK_OPS` caps the total number
+# of (x1,x2,y1,y2) combinations examined across the whole recursion; when a
+# single state's combination count alone exceeds the cap (tiny box on a huge
+# pallet -> very fine raster) the search is skipped entirely and the strip DP
+# result is used, so worst-case behaviour never regresses.
+_FIVE_BLOCK_OPS = 3_000_000
+
+
+def _five_block_pack(L: float, W: float, a: float, b: float) -> List[Rect]:
+    """Recursive five-block (pinwheel) packing of a x b boxes on L x W.
+
+    Every state is canonicalized to raster-normalized (long, short) sizes;
+    the exact strip DP is the base solution for each state, and the search
+    tries every five-block split with corners on raster points. Solutions
+    are rebuilt from the memoised choices after the search.
+    """
+    amax, amin = max(a, b), min(a, b)
+    rast = _raster_points(max(L, W), a, b)
+    counts: Dict[Tuple[float, float], int] = {}
+    choices: Dict[Tuple[float, float], Tuple] = {}
+    ops = [_FIVE_BLOCK_OPS]
+    box_area = a * b
+
+    def solve(l: float, w: float) -> int:
+        """`l >= w`, both raster-normalized. Returns the best box count."""
+        if l < amax or w < amin:
+            return 0
+        key = (l, w)
+        cached = counts.get(key)
+        if cached is not None:
+            return cached
+        # Pre-seed with the strip DP so recursive references to this state
+        # (via blocks of the same normalized size) see a valid floor value.
+        best = len(_strip_rects(l, w, a, b, True))
+        best_choice: Tuple = ("strip",)
+        counts[key] = best
+        choices[key] = best_choice
+
+        area_ub = int((l * w) // box_area)
+        if best < area_ub and ops[0] > 0:
+            cx = [v for v in rast if v <= l]
+            cy = [v for v in rast if v <= w]
+            n_combos = (len(cx) * (len(cx) + 1) // 2) * (len(cy) * (len(cy) + 1) // 2)
+            if n_combos <= ops[0]:
+                ops[0] -= n_combos
+                done = False
+                for i1, x1 in enumerate(cx):
+                    if done:
+                        break
+                    for x2 in cx[i1:]:
+                        if done:
+                            break
+                        for j1, y1 in enumerate(cy):
+                            if done:
+                                break
+                            for y2 in cy[j1:]:
+                                # Five blocks: left, top, right, bottom, centre.
+                                blocks = ((x1, w - y1), (l - x1, w - y2),
+                                          (l - x2, y2), (x2, y1),
+                                          (x2 - x1, y2 - y1))
+                                v = 0
+                                degenerate = False
+                                for (bl, bw) in blocks:
+                                    if bl <= 0 or bw <= 0:
+                                        continue
+                                    if bl >= l and bw >= w:
+                                        degenerate = True  # block == whole rect
+                                        break
+                                    nl = _normalize(bl, rast)
+                                    nw = _normalize(bw, rast)
+                                    v += solve(nl, nw) if nl >= nw else solve(nw, nl)
+                                if degenerate:
+                                    continue
+                                if v > best:
+                                    best, best_choice = v, ("five", x1, x2, y1, y2)
+                                    counts[key] = best
+                                    choices[key] = best_choice
+                                    if best >= area_ub:
+                                        done = True
+                                        break
+        return best
+
+    def build(l: float, w: float) -> List[Rect]:
+        """Rebuild the rect list for a solved canonical state."""
+        if l < amax or w < amin:
+            return []
+        solve(l, w)
+        c = choices[(l, w)]
+        if c[0] == "strip":
+            return _strip_rects(l, w, a, b, True)
+        _, x1, x2, y1, y2 = c
+        placed_blocks = ((0.0, y1, x1, w - y1), (x1, y2, l - x1, w - y2),
+                         (x2, 0.0, l - x2, y2), (0.0, 0.0, x2, y1),
+                         (x1, y1, x2 - x1, y2 - y1))
+        out: List[Rect] = []
+        for (bx, by, bl, bw) in placed_blocks:
+            if bl <= 0 or bw <= 0:
+                continue
+            nl = _normalize(bl, rast)
+            nw = _normalize(bw, rast)
+            if nl >= nw:
+                out += [(bx + rx, by + ry, rw, rh) for (rx, ry, rw, rh) in build(nl, nw)]
+            else:  # canonical solution is transposed relative to this block
+                out += [(bx + ry, by + rx, rh, rw) for (rx, ry, rw, rh) in build(nw, nl)]
+        return out
+
+    nL, nW = _normalize(L, rast), _normalize(W, rast)
+    if nL >= nW:
+        return build(nL, nW)
+    return [(ry, rx, rh, rw) for (rx, ry, rw, rh) in build(nW, nL)]
+
+
+# Layer layouts are recomputed for every layer/orientation/variant with the
+# same arguments, so memoise across calls. Cleared wholesale when it grows —
+# a handful of configs is the normal working set.
+_pack_cache: Dict[Tuple[float, float, float, float], List[Rect]] = {}
+
+
+def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
+    """Layout of identical a×b footprints on an L×W pallet — see the module
+    docstring for the two-solver (strip DP + five-block) approach.
+    """
+    if a <= 0 or b <= 0 or L <= 0 or W <= 0:
+        return []
+    if not allow_swap:
+        return _strip_rects(L, W, a, b, False)
+    key = (L, W, a, b)
+    cached = _pack_cache.get(key)
+    if cached is None:
+        cached = _five_block_pack(L, W, a, b)
+        if len(_pack_cache) > 256:
+            _pack_cache.clear()
+        _pack_cache[key] = cached
+    return list(cached)
 
 
 def _layer_height_budget(idx: int, additional: Optional[AdditionalElements]) -> float:

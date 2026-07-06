@@ -94,10 +94,14 @@ def _build_layers(config: StackingConfig,
 
 
 def _signature(result: StackingResult):
-    """Identity used to drop duplicate arrangements (same boxes + same
-    per-layer footprint/count sequence)."""
+    """Identity used to drop duplicate arrangements. Includes the actual
+    rect geometry per layer so that layouts with equal counts but different
+    physical placement (e.g. mirrored bonding layers) are kept apart."""
     return (result.total_boxes, len(result.layers),
-            tuple((round(l.dim_x), round(l.dim_y), l.count) for l in result.layers))
+            tuple((round(l.dim_x), round(l.dim_y), l.count,
+                   tuple(sorted((round(x), round(y), round(w), round(h))
+                                for (x, y, w, h) in l.rects)))
+                  for l in result.layers))
 
 
 def generate_variants(config: StackingConfig) -> List[Dict]:
@@ -135,8 +139,33 @@ def generate_variants(config: StackingConfig) -> List[Dict]:
             f"mixing.",
             _build_layers(config, lambda i, o=o: o, allow_swap=False))
 
-    # 3. interlocked (alternating 90-degree) from the densest orientation
+    # 3. bonded (mirrored alternate layers): the densest layout with every
+    #    odd layer mirrored in X. Same count per layer, but vertical seams
+    #    no longer line up, so the stack is interlocked ("brick bond") even
+    #    for non-uniform block/pinwheel layouts where a plain 90-degree
+    #    rotation of the whole layer wouldn't fit the footprint.
     best = stack_layers(config)
+    if best.layers and any(len(l.rects) > 1 for l in best.layers):
+        mirrored_layers = []
+        for l in best.layers:
+            if l.index % 2 == 0:
+                rects = l.rects
+            else:
+                rects = [(pallet.length - x - rw, y, rw, rh)
+                         for (x, y, rw, rh) in l.rects]
+            mirrored_layers.append(LayerResult(
+                index=l.index, z_start=l.z_start,
+                dim_x=l.dim_x, dim_y=l.dim_y, dim_z=l.dim_z,
+                orientation=l.orientation, rects=rects, weight=l.weight,
+            ))
+        add("Bonded (mirrored alternate layers)",
+            "Same densest layout, but every other layer is mirrored so the "
+            "vertical seams between boxes don't line up — a cross/brick bond "
+            "that keeps the maximum count.",
+            _finalize(config, mirrored_layers, best.total_height,
+                      best.total_weight, best.limiting))
+
+    # 4. interlocked (alternating 90-degree) from the densest orientation
     if best.layers:
         l0 = best.layers[0]
         base = {"dx": l0.dim_x, "dy": l0.dim_y, "dz": l0.dim_z, "label": l0.orientation}
