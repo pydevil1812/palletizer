@@ -229,6 +229,192 @@ def admin_clear_cache():
     return '', 204
 
 
+# ── Catalogs: read for any user, modify for admins only ──────────────────────
+
+def _parse_pallet_body(body):
+    """Validate a pallet payload; returns (fields, error)."""
+    name = (body.get('name') or '').strip()
+    if not name:
+        return None, 'Name is required'
+    try:
+        length = float(body.get('length'))
+        width = float(body.get('width'))
+        deck_height = float(body.get('deck_height', 145))
+        load_capacity = float(body.get('load_capacity', 1500))
+    except (TypeError, ValueError):
+        return None, 'length/width/deck_height/load_capacity must be numbers'
+    if length <= 0 or width <= 0 or deck_height < 0 or load_capacity <= 0:
+        return None, 'Dimensions must be positive'
+    return (name, length, width, deck_height, load_capacity), None
+
+
+def _parse_box_body(body):
+    """Validate a box payload; returns (fields, error)."""
+    name = (body.get('name') or '').strip()
+    if not name:
+        return None, 'Name is required'
+    sku = (body.get('sku') or '').strip()
+    try:
+        length = float(body.get('length'))
+        width = float(body.get('width'))
+        height = float(body.get('height'))
+        weight = float(body.get('weight', 0))
+    except (TypeError, ValueError):
+        return None, 'length/width/height/weight must be numbers'
+    if length <= 0 or width <= 0 or height <= 0 or weight < 0:
+        return None, 'Dimensions must be positive'
+    return (sku, name, length, width, height, weight), None
+
+
+@app.get('/api/catalog/pallets')
+@require_auth
+def catalog_list_pallets():
+    return jsonify([_row_to_dict(r) for r in history.list_catalog_pallets()])
+
+
+@app.post('/api/admin/catalog/pallets')
+@require_admin
+def catalog_create_pallet():
+    body = request.get_json(force=True, silent=True) or {}
+    fields, err = _parse_pallet_body(body)
+    if err:
+        return jsonify({'error': err}), 400
+    new_id = history.create_catalog_pallet(*fields)
+    if new_id is None:
+        return jsonify({'error': 'A pallet with this name already exists'}), 409
+    return jsonify({'id': new_id}), 201
+
+
+@app.put('/api/admin/catalog/pallets/<int:pallet_id>')
+@require_admin
+def catalog_update_pallet(pallet_id):
+    body = request.get_json(force=True, silent=True) or {}
+    fields, err = _parse_pallet_body(body)
+    if err:
+        return jsonify({'error': err}), 400
+    if not history.update_catalog_pallet(pallet_id, *fields):
+        return jsonify({'error': 'A pallet with this name already exists'}), 409
+    return jsonify({'ok': True})
+
+
+@app.delete('/api/admin/catalog/pallets/<int:pallet_id>')
+@require_admin
+def catalog_delete_pallet(pallet_id):
+    history.delete_catalog_pallet(pallet_id)
+    return '', 204
+
+
+@app.post('/api/admin/catalog/pallets/import')
+@require_admin
+def catalog_import_pallets():
+    body = request.get_json(force=True, silent=True) or {}
+    rows, err = _validated_import_rows(body, _parse_pallet_body,
+                                       ('name', 'length', 'width', 'deck_height', 'load_capacity'))
+    if err:
+        return jsonify({'error': err}), 400
+    count = history.import_catalog_pallets(rows, replace=bool(body.get('replace')))
+    return jsonify({'imported': count})
+
+
+@app.get('/api/catalog/boxes')
+@require_auth
+def catalog_list_boxes():
+    return jsonify([_row_to_dict(r) for r in history.list_catalog_boxes()])
+
+
+@app.post('/api/admin/catalog/boxes')
+@require_admin
+def catalog_create_box():
+    body = request.get_json(force=True, silent=True) or {}
+    fields, err = _parse_box_body(body)
+    if err:
+        return jsonify({'error': err}), 400
+    return jsonify({'id': history.create_catalog_box(*fields)}), 201
+
+
+@app.put('/api/admin/catalog/boxes/<int:box_id>')
+@require_admin
+def catalog_update_box(box_id):
+    body = request.get_json(force=True, silent=True) or {}
+    fields, err = _parse_box_body(body)
+    if err:
+        return jsonify({'error': err}), 400
+    history.update_catalog_box(box_id, *fields)
+    return jsonify({'ok': True})
+
+
+@app.delete('/api/admin/catalog/boxes/<int:box_id>')
+@require_admin
+def catalog_delete_box(box_id):
+    history.delete_catalog_box(box_id)
+    return '', 204
+
+
+@app.post('/api/admin/catalog/boxes/import')
+@require_admin
+def catalog_import_boxes():
+    body = request.get_json(force=True, silent=True) or {}
+    rows, err = _validated_import_rows(body, _parse_box_body,
+                                       ('sku', 'name', 'length', 'width', 'height', 'weight'))
+    if err:
+        return jsonify({'error': err}), 400
+    count = history.import_catalog_boxes(rows, replace=bool(body.get('replace')))
+    return jsonify({'imported': count})
+
+
+def _validated_import_rows(body, parser, keys):
+    """Validate body['rows'] with `parser`; returns (normalized_rows, error)."""
+    raw = body.get('rows')
+    if not isinstance(raw, list) or not raw:
+        return None, 'rows must be a non-empty list'
+    rows = []
+    for i, r in enumerate(raw):
+        if not isinstance(r, dict):
+            return None, f'Row {i + 1}: expected an object'
+        fields, err = parser(r)
+        if err:
+            return None, f'Row {i + 1}: {err}'
+        rows.append(dict(zip(keys, fields)))
+    return rows, None
+
+
+# ── Configuration templates ───────────────────────────────────────────────────
+
+@app.get('/api/catalog/templates')
+@require_auth
+def catalog_list_templates():
+    return jsonify([_row_to_dict(r) for r in history.list_templates()])
+
+
+@app.get('/api/catalog/templates/<int:template_id>')
+@require_auth
+def catalog_get_template(template_id):
+    config = history.get_template_config(template_id)
+    if config is None:
+        return jsonify({'error': 'not found'}), 404
+    return jsonify({'config': config})
+
+
+@app.post('/api/admin/catalog/templates')
+@require_admin
+def catalog_create_template():
+    body = request.get_json(force=True, silent=True) or {}
+    name = (body.get('name') or '').strip()
+    config = body.get('config')
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    if not isinstance(config, dict) or not config:
+        return jsonify({'error': 'config is required'}), 400
+    return jsonify({'id': history.create_template(name, config)}), 201
+
+
+@app.delete('/api/admin/catalog/templates/<int:template_id>')
+@require_admin
+def catalog_delete_template(template_id):
+    history.delete_template(template_id)
+    return '', 204
+
+
 # ── History (auth required) ───────────────────────────────────────────────────
 
 @app.get('/api/history')

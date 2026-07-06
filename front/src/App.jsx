@@ -5,6 +5,8 @@ import { useThreeScene } from './hooks/useThreeScene.js';
 import { useHistory } from './hooks/useHistory.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useAuth } from './hooks/useAuth.js';
+import { useCatalog } from './hooks/useCatalog.js';
+import { CatalogApiService } from './services/CatalogApiService.js';
 import { useLang } from './i18n/LangContext.jsx';
 import { formatError, formatRecommendation } from './i18n/messages.js';
 import { CanvasTopRenderer } from './services/CanvasTopRenderer.js';
@@ -35,6 +37,11 @@ export default function App() {
   const [compareIds, setCompareIds] = useState([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  // 'manual' = free-form inputs; 'template' = pick boxes/pallets from the
+  // admin-managed catalogs. Persisted per browser.
+  const [inputMode, setInputMode] = useState(
+    () => localStorage.getItem('palletizer_input_mode') || 'manual',
+  );
   const [topLayerIndex, setTopLayerIndex] = useState(0);
   const [sideAxis, setSideAxis] = useState('length');
   const [topInfo, setTopInfo] = useState(null);
@@ -51,6 +58,14 @@ export default function App() {
   const printAreaRef = useRef(null);
 
   const threeScene = useThreeScene(hostEl, theme);
+  // Reload the catalogs whenever template mode becomes active again (e.g.
+  // after the admin edited them in the admin panel).
+  const catalog = useCatalog(auth.isLoggedIn && inputMode === 'template' && !adminOpen);
+
+  const changeInputMode = (mode) => {
+    setInputMode(mode);
+    localStorage.setItem('palletizer_input_mode', mode);
+  };
   const topRenderer = useMemo(() => new CanvasTopRenderer(), []);
   const sideRenderer = useMemo(() => new CanvasSideRenderer(), []);
 
@@ -115,6 +130,30 @@ export default function App() {
   const handleResetExample = () => applyImportedConfig(config.loadExample());
   const handleLoadJson = (json) => applyImportedConfig(config.loadFromJSON(json));
   const handleSaveJson = () => ExportService.exportJson(config.toPalletConfig());
+
+  const handleApplyTemplate = async (templateId) => {
+    try {
+      const cfg = await CatalogApiService.getTemplateConfig(templateId);
+      await applyImportedConfig(config.loadFromJSON(cfg), { record: false });
+    } catch (err) {
+      alert(t('catalog.templateLoadFailed') + err.message);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    const name = window.prompt(t('catalog.templateNamePrompt'));
+    if (!name || !name.trim()) return;
+    try {
+      await CatalogApiService.createTemplate(
+        name.trim(),
+        ConfigSerializer.toExportJSON(config.toPalletConfig()),
+      );
+      catalog.refresh();
+      alert(t('catalog.templateSaved'));
+    } catch (err) {
+      alert(t('catalog.templateSaveFailed') + err.message);
+    }
+  };
 
   const handleOpenHistory = () => setHistoryOpen(true);
   const handleCloseHistory = () => setHistoryOpen(false);
@@ -209,6 +248,9 @@ export default function App() {
         onOpenHistory={handleOpenHistory}
         theme={theme}
         onToggleTheme={toggleTheme}
+        inputMode={inputMode}
+        onChangeInputMode={changeInputMode}
+        onSaveTemplate={handleSaveTemplate}
         isComputing={stack.isComputing}
         username={auth.session.username}
         isAdmin={auth.isAdmin}
@@ -222,6 +264,9 @@ export default function App() {
             onResetExample={handleResetExample}
             onCompute={handleCompute}
             additionalOpenSignal={additionalOpenSignal}
+            inputMode={inputMode}
+            catalog={catalog}
+            onApplyTemplate={handleApplyTemplate}
           />
         ) : (
           <RecommendationsPanel result={stack.result} />

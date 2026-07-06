@@ -12,6 +12,9 @@ export function Header({
   onOpenHistory,
   theme,
   onToggleTheme,
+  inputMode,
+  onChangeInputMode,
+  onSaveTemplate,
   isComputing,
   username,
   isAdmin,
@@ -58,6 +61,10 @@ export function Header({
             }}
             theme={theme}
             onToggleTheme={onToggleTheme}
+            inputMode={inputMode}
+            onChangeInputMode={onChangeInputMode}
+            isAdmin={isAdmin}
+            onSaveTemplate={onSaveTemplate}
           />
         )}
       </div>

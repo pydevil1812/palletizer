@@ -48,6 +48,7 @@ export function usePalletConfig() {
 
   return {
     state,
+    applyPatch: apply,
     setBoxField,
     setPalletField,
     setMaxStackHeight,
