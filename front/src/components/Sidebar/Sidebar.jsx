@@ -5,6 +5,7 @@ import { CatalogPalletCard } from './CatalogPalletCard.jsx';
 import { TemplateCard } from './TemplateCard.jsx';
 import { LimitsCard } from './LimitsCard.jsx';
 import { OrientationsCard } from './OrientationsCard.jsx';
+import { PackingModeCard } from './PackingModeCard.jsx';
 import { AdditionalElementsCard } from './AdditionalElementsCard.jsx';
 import { useLang } from '../../i18n/LangContext.jsx';
 
@@ -18,7 +19,7 @@ export function Sidebar({
   onApplyTemplate,
 }) {
   const { t } = useLang();
-  const { state, applyPatch, setBoxField, setPalletField, setMaxStackHeight, setOrientationFlag, setAdditionalField } = config;
+  const { state, applyPatch, setBoxField, setPalletField, setMaxStackHeight, setOrientationFlag, setAdditionalField, setPackingMode } = config;
   const templateMode = inputMode === 'template';
 
   const selectCatalogBox = (item) => {
@@ -74,6 +75,7 @@ export function Sidebar({
       )}
       <LimitsCard maxStackHeight={state.maxStackHeight} onChange={setMaxStackHeight} />
       <OrientationsCard orientationFlags={state.orientationFlags} onChange={setOrientationFlag} />
+      <PackingModeCard packingMode={state.packingMode} onChange={setPackingMode} />
       <AdditionalElementsCard
         additional={state.additional}
         onChange={setAdditionalField}

@@ -2,6 +2,7 @@
 .claude/
 front/node_modules/
 palletizer_source/.deps_installed
+front/dist/
 *.db
 *.sqlite
 *.sqlite3

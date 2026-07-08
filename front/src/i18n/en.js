@@ -186,6 +186,16 @@ export const en = {
     rotateY: 'Tip onto end face (Y axis)',
     rotateYHint: 'swap L↔H',
   },
+  packingMode: {
+    title: 'Stacking mode',
+    standard: 'Standard',
+    standardHint: 'maximum boxes per layer, gaps collected near the walls',
+    spiral: 'Spiral',
+    spiralHint:
+      'brick-laying perimeter with locked corners, middle packed tight — stability and load ' +
+      'uniformity under stretch wrap/straps; a gap is left only when slack requires it ' +
+      '(needs 90° footprint rotation)',
+  },
   additional: {
     title: 'Additional elements (optional)',
     enable: 'Enable additional elements',

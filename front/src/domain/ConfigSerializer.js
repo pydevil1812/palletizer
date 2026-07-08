@@ -16,6 +16,7 @@ export class ConfigSerializer {
         load_capacity: pallet.loadCapacity,
       },
       max_stack_height: config.maxStackHeight,
+      packing_mode: config.packingMode === 'spiral' ? 'spiral' : 'standard',
       orientation_flags: {
         allow_rotate_x: config.orientationFlags.allowRotateX,
         allow_rotate_y: config.orientationFlags.allowRotateY,
@@ -67,6 +68,8 @@ export class ConfigSerializer {
     if (Object.keys(pallet).length) patch.pallet = pallet;
 
     if (json.max_stack_height != null) patch.maxStackHeight = json.max_stack_height;
+
+    patch.packingMode = json.packing_mode === 'spiral' ? 'spiral' : 'standard';
 
     patch.orientationFlags = {
       allowRotateX: !!o.allow_rotate_x,

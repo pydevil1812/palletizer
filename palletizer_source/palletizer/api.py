@@ -76,12 +76,16 @@ def build_config(data: Dict) -> StackingConfig:
         use_film=bool(a.get("use_film", False)),
         film_weight_kg=_num(a.get("film_weight_kg")),
     )
+    packing_mode = data.get("packing_mode")
+    if packing_mode not in ("standard", "spiral"):
+        packing_mode = "standard"
     return StackingConfig(
         box=box,
         pallet=pallet,
         max_stack_height=_num(data.get("max_stack_height")),
         orientation_flags=orientation_flags,
         additional=additional,
+        packing_mode=packing_mode,
     )
 
 
@@ -131,6 +135,7 @@ def _serialize_config(config: StackingConfig) -> Dict:
             "loadCapacity": config.pallet.load_capacity,
         },
         "maxStackHeight": config.max_stack_height,
+        "packingMode": config.packing_mode,
         "orientationFlags": {
             "allowRotateX": config.orientation_flags.allow_rotate_x,
             "allowRotateY": config.orientation_flags.allow_rotate_y,

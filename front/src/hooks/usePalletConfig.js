@@ -14,6 +14,7 @@ function mergePatch(prev, patch) {
     maxStackHeight: patch.maxStackHeight != null ? patch.maxStackHeight : prev.maxStackHeight,
     orientationFlags: { ...prev.orientationFlags, ...(patch.orientationFlags || {}) },
     additional: { ...prev.additional, ...(patch.additional || {}) },
+    packingMode: patch.packingMode != null ? patch.packingMode : prev.packingMode,
   };
 }
 
@@ -40,6 +41,7 @@ export function usePalletConfig() {
   const setMaxStackHeight = (value) => apply({ maxStackHeight: value });
   const setOrientationFlag = (field, value) => apply({ orientationFlags: { [field]: value } });
   const setAdditionalField = (field, value) => apply({ additional: { [field]: value } });
+  const setPackingMode = (value) => apply({ packingMode: value });
 
   const loadExample = () => apply(ConfigSerializer.fromImportedJSON(EXAMPLE_CONFIG_JSON));
   const loadFromJSON = (json) => apply(ConfigSerializer.fromImportedJSON(json));
@@ -54,6 +56,7 @@ export function usePalletConfig() {
     setMaxStackHeight,
     setOrientationFlag,
     setAdditionalField,
+    setPackingMode,
     loadExample,
     loadFromJSON,
     toPalletConfig,

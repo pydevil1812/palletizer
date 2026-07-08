@@ -25,6 +25,20 @@ Two stages:
      (tiny box on a huge pallet) it falls back to the strip DP, so worst-
      case behaviour never regresses below the historical algorithm.
 
+     Stage 1 has two modes (`StackingConfig.packing_mode`):
+
+       * "standard" — the two solvers above, maximizing box count. Gaps
+         end up collected near the container walls.
+       * "spiral"  — `_spiral_pack`: a pinwheel ("brick-laying") perimeter
+         ring with all four corners solidly locked, plus a dense fill of
+         the interior. Boxes are packed as tightly as possible; only when
+         an arm has leftover slack is a single intentional gap left
+         mid-arm (both corner ends stay tight), so the ring closes into a
+         solid unit when compressed with stretch wrap or straps. A central
+         hole may remain, as in classic spiral pallet patterns. Layers
+         alternate chirality (mirrored every other layer) so the vertical
+         seams interlock like brickwork.
+
   2. `stack_layers` repeatedly calls stage 1 for every allowed box
      orientation, picks the orientation that yields the most boxes for
      the height/weight budget remaining, and stacks layers until the
@@ -255,24 +269,94 @@ def _five_block_pack(L: float, W: float, a: float, b: float) -> List[Rect]:
     return [(ry, rx, rh, rw) for (rx, ry, rw, rh) in build(nW, nL)]
 
 
+def _arm_offsets(n: int, p: float, span: float) -> List[float]:
+    """Offsets of `n` boxes of length `p` along an arm of length `span`,
+    packed as tightly as possible. If the arm has slack, both corner ends
+    stay tight and the single leftover gap is left mid-arm (never at a
+    corner), so it can close up under compression; an exact fit has no gap
+    at all. With n == 1 the box hugs its anchor corner and the slack sits
+    at the tail."""
+    slack = span - n * p
+    if slack <= 1e-9 or n == 1:
+        return [i * p for i in range(n)]
+    k = (n + 1) // 2  # boxes tight against the anchor corner; rest tight at the far end
+    return [i * p for i in range(k)] + [span - (n - i) * p for i in range(k, n)]
+
+
+def _spiral_ring(L: float, W: float, p: float, q: float) -> Optional[List[Rect]]:
+    """Pinwheel perimeter ring of p×q boxes (p = long side) around the
+    L × W footprint, ring thickness q. Each of the four arms is anchored at
+    "its" corner and runs toward the next corner, so all four corners are
+    solidly occupied. Returns None when a full ring (>= 1 box per arm) does
+    not fit.
+    """
+    # An arm spans (side length - q); it must hold at least one p-long box.
+    n_x = int((L - q) // p)  # boxes per horizontal arm (bottom / top)
+    n_y = int((W - q) // p)  # boxes per vertical arm (left / right)
+    if n_x < 1 or n_y < 1:
+        return None
+
+    rects: List[Rect] = []
+    # Arm regions (disjoint, pinwheel-fashion):
+    #   bottom x∈[0, L−q) y∈[0, q)   |  right x∈[L−q, L) y∈[0, W−q)
+    #   top    x∈[q, L)   y∈[W−q, W) |  left  x∈[0, q)   y∈[q, W)
+    for d in _arm_offsets(n_x, p, L - q):
+        rects.append((d, 0.0, p, q))              # bottom arm, anchored left
+        rects.append((L - p - d, W - q, p, q))    # top arm, anchored right
+    for d in _arm_offsets(n_y, p, W - q):
+        rects.append((L - q, d, q, p))            # right arm, anchored bottom
+        rects.append((0.0, W - p - d, q, p))      # left arm, anchored top
+    return rects
+
+
+def _spiral_pack(L: float, W: float, a: float, b: float) -> List[Rect]:
+    """Pinwheel perimeter ring + dense interior ("spiral"/brick-laying
+    pallet pattern).
+
+    The outer boxes form a complete perimeter with locked corners; the
+    central space is then filled as tightly as possible with the standard
+    solvers (whatever hole remains is the classic central gap of spiral
+    patterns). When no full ring fits, the whole footprint is packed
+    densely instead.
+    """
+    if a <= 0 or b <= 0 or L <= 0 or W <= 0:
+        return []
+    p, q = max(a, b), min(a, b)
+    ring = _spiral_ring(L, W, p, q)
+    if ring is None:
+        return _five_block_pack(L, W, a, b)
+    inner_l, inner_w = L - 2 * q, W - 2 * q
+    if inner_l >= q and inner_w >= q:
+        core = _five_block_pack(inner_l, inner_w, a, b)
+        ring += [(q + rx, q + ry, rw, rh) for (rx, ry, rw, rh) in core]
+    return ring
+
+
 # Layer layouts are recomputed for every layer/orientation/variant with the
 # same arguments, so memoise across calls. Cleared wholesale when it grows —
 # a handful of configs is the normal working set.
-_pack_cache: Dict[Tuple[float, float, float, float], List[Rect]] = {}
+_pack_cache: Dict[Tuple[float, float, float, float, str], List[Rect]] = {}
 
 
-def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool) -> List[Rect]:
+def pack_rectangle(L: float, W: float, a: float, b: float, allow_swap: bool,
+                   mode: str = "standard") -> List[Rect]:
     """Layout of identical a×b footprints on an L×W pallet — see the module
-    docstring for the two-solver (strip DP + five-block) approach.
+    docstring for the two packing modes and the two-solver (strip DP +
+    five-block) approach behind the standard one.
     """
     if a <= 0 or b <= 0 or L <= 0 or W <= 0:
         return []
     if not allow_swap:
+        # Pinwheel arms need both footprint orientations, so the spiral
+        # pattern is only possible when 90° rotation is allowed.
         return _strip_rects(L, W, a, b, False)
-    key = (L, W, a, b)
+    key = (L, W, a, b, mode)
     cached = _pack_cache.get(key)
     if cached is None:
-        cached = _five_block_pack(L, W, a, b)
+        if mode == "spiral":
+            cached = _spiral_pack(L, W, a, b)
+        else:
+            cached = _five_block_pack(L, W, a, b)
         if len(_pack_cache) > 256:
             _pack_cache.clear()
         _pack_cache[key] = cached
@@ -340,7 +424,8 @@ def stack_layers(config: StackingConfig) -> StackingResult:
                 continue
             rects = pack_rectangle(pallet.length, pallet.width,
                                     orient["dx"], orient["dy"],
-                                    config.orientation_flags.allow_rotate_z)
+                                    config.orientation_flags.allow_rotate_z,
+                                    config.packing_mode)
             count = len(rects)
             if count == 0:
                 continue
@@ -364,6 +449,12 @@ def stack_layers(config: StackingConfig) -> StackingResult:
             else:
                 limiting = "height"
             break
+
+        if config.packing_mode == "spiral" and layer_idx % 2 == 1:
+            # Mirror every other layer (flip chirality of the pinwheel) so
+            # vertical seams interlock like brickwork between layers.
+            best["rects"] = [(pallet.length - x - w, y, w, h)
+                             for (x, y, w, h) in best["rects"]]
 
         z_cursor += spacer_h
         weight_used += spacer_w

@@ -110,6 +110,7 @@ class StackingConfig:
     max_stack_height: float                  # mm, total height incl. pallet deck
     orientation_flags: OrientationFlags = field(default_factory=OrientationFlags)
     additional: Optional[AdditionalElements] = None
+    packing_mode: str = "standard"  # "standard" | "spiral" — see packer.py
 
 
 # ---------------------------------------------------------------------------
