@@ -10,6 +10,7 @@
      controls floating on it; all follow the active theme. */
   --stagebg:#0c1118; --stagetext:#e6edf5; --stagemuted:#93a4b8;
   --stageoverlay:rgba(14,21,30,.85); --stageoverlay2:rgba(14,21,30,.55);
+  --accenttext:#06182c;
 }
 /* Light theme: same structure/spacing, swapped tokens only. */
 :root[data-theme="light"]{
@@ -22,6 +23,7 @@
   --bannerwarnbg:#fdf1dc; --bannerwarntext:#7a5209;
   --stagebg:#e9edf3; --stagetext:#1b2430; --stagemuted:#5b6b7d;
   --stageoverlay:rgba(255,255,255,.85); --stageoverlay2:rgba(255,255,255,.6);
+  --accenttext:#ffffff;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -48,9 +50,11 @@ button{
   cursor:pointer; transition:.12s; white-space:nowrap;
 }
 button:hover{border-color:var(--accent); color:var(--text)}
-button.primary{background:var(--accent); border-color:var(--accent); color:#06182c; font-weight:650}
+button.primary{background:var(--accent); border-color:var(--accent); color:var(--accenttext); font-weight:650}
 button.primary:hover{filter:brightness(1.08)}
 button.ghost{background:transparent}
+button.ghost.reset-example-btn{background:var(--bg)}
+:root[data-theme="light"] button.ghost.reset-example-btn{background:#fff}
 button:disabled{opacity:.45; cursor:not-allowed}
 
 .layout{display:flex; flex:1; min-height:0; overflow:hidden}
@@ -86,7 +90,10 @@ details.card summary{cursor:pointer; list-style:none; color:var(--muted);
 details.card summary::-webkit-details-marker{display:none}
 details.card summary::before{content:"▸ "; color:var(--accent)}
 details.card[open] summary::before{content:"▾ "}
-.row-btns{display:flex; gap:8px; margin-top:4px}
+.row-btns{
+  display:flex; gap:8px; margin-top:4px; padding-top:8px;
+  position:sticky; bottom:0; background:var(--panel); background-color: rgba(255, 255, 255, 0);
+}
 .row-btns button{flex:1}
 
 /* results */
@@ -96,7 +103,7 @@ details.card[open] summary::before{content:"▾ "}
 }
 .tabs{display:flex; gap:4px; background:var(--chip); padding:3px; border-radius:9px}
 .tabs button{background:transparent; border:none; padding:4px 12px; border-radius:6px; color:var(--muted)}
-.tabs button.active{background:var(--accent); color:#06182c; font-weight:650}
+.tabs button.active{background:var(--accent); color:var(--accenttext); font-weight:650}
 .toolbar .spacer{flex:1}
 
 .stats{display:flex; gap:10px; padding:10px 14px; flex-wrap:nowrap; overflow-x:auto; border-bottom:1px solid var(--line); background:var(--panel)}
@@ -255,13 +262,18 @@ table.boxes tbody tr:hover{background:var(--rowhover)}
   flex:1; background:transparent; border:none; padding:6px 12px; border-radius:6px;
   color:var(--muted); font-weight:500;
 }
-.auth-tabs button.active{background:var(--accent); color:#06182c; font-weight:650}
+.auth-tabs button.active{background:var(--accent); color:var(--accenttext); font-weight:650}
 .auth-form{width:100%}
 .auth-submit{display:block; width:100%; margin-top:18px; padding:9px}
 
 /* ── Header user area ────────────────────────────────────────────────────── */
-.header-user{display:flex; align-items:center; gap:8px}
+.header-user{display:flex; align-items:center; gap:8px; position:relative}
+.header-username-btn{display:flex; align-items:center; gap:6px}
 .header-username{font-size:12px; white-space:nowrap}
+.header-username-caret{font-size:10px; color:var(--muted)}
+.user-popover{left:auto; right:0; width:180px; padding:6px}
+.user-popover button{display:block; width:100%; text-align:left; margin-bottom:4px}
+.user-popover button:last-child{margin-bottom:0}
 
 /* ── Admin page ─────────────────────────────────────────────────────────── */
 .admin-page{
@@ -281,7 +293,7 @@ table.boxes tbody tr:hover{background:var(--rowhover)}
   background:transparent; border:1px solid transparent; padding:5px 14px;
   border-radius:7px; color:var(--muted);
 }
-.admin-tab.active{background:var(--accent); border-color:var(--accent); color:#06182c; font-weight:650}
+.admin-tab.active{background:var(--accent); border-color:var(--accent); color:var(--accenttext); font-weight:650}
 .admin-content{flex:1; overflow:auto; padding:16px}
 .admin-table-wrap{overflow-x:auto}
 .admin-row-actions{display:flex; gap:6px; flex-wrap:wrap}

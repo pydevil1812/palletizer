@@ -6,7 +6,7 @@ import { useLang } from '../../i18n/LangContext.jsx';
  * Template-mode replacement for PalletCard: the pallet type is picked from
  * the admin catalog, all parameters are read-only.
  */
-export function CatalogPalletCard({ pallet, pallets, onSelect }) {
+export function CatalogPalletCard({ pallet, pallets, onSelect, maxStackHeight, onMaxStackHeightChange }) {
   const { t } = useLang();
   const selected = pallets.find((p) => p.name === pallet.name);
 
@@ -37,6 +37,16 @@ export function CatalogPalletCard({ pallet, pallets, onSelect }) {
           </div>
         </>
       )}
+      <div style={{ marginTop: 8 }}>
+        <FormField
+          label={t('limits.maxHeight')}
+          type="number"
+          min={1}
+          step={1}
+          value={maxStackHeight}
+          onChange={onMaxStackHeightChange}
+        />
+      </div>
     </div>
   );
 }

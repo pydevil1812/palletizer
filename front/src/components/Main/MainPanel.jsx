@@ -57,13 +57,14 @@ export function MainPanel({
         <TableView active={activeTab === 'table'} result={result} />
       </div>
 
-      <Legend result={result} />
-
       <RecommendationsBar
         count={result?.recommendations?.length ?? 0}
         active={leftPanelMode === 'recs'}
         onClick={onToggleLeftPanel}
       />
+      
+      <Legend result={result} />
+
     </section>
   );
 }

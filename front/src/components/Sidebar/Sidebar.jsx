@@ -3,7 +3,6 @@ import { PalletCard } from './PalletCard.jsx';
 import { CatalogBoxCard } from './CatalogBoxCard.jsx';
 import { CatalogPalletCard } from './CatalogPalletCard.jsx';
 import { TemplateCard } from './TemplateCard.jsx';
-import { LimitsCard } from './LimitsCard.jsx';
 import { OrientationsCard } from './OrientationsCard.jsx';
 import { PackingModeCard } from './PackingModeCard.jsx';
 import { AdditionalElementsCard } from './AdditionalElementsCard.jsx';
@@ -64,17 +63,23 @@ export function Sidebar({
       ) : (
         <BoxCard box={state.box} onChange={setBoxField} />
       )}
+      <OrientationsCard orientationFlags={state.orientationFlags} onChange={setOrientationFlag} />
       {templateMode ? (
         <CatalogPalletCard
           pallet={state.pallet}
           pallets={catalog.pallets}
           onSelect={selectCatalogPallet}
+          maxStackHeight={state.maxStackHeight}
+          onMaxStackHeightChange={setMaxStackHeight}
         />
       ) : (
-        <PalletCard pallet={state.pallet} onChange={setPalletField} />
+        <PalletCard
+          pallet={state.pallet}
+          onChange={setPalletField}
+          maxStackHeight={state.maxStackHeight}
+          onMaxStackHeightChange={setMaxStackHeight}
+        />
       )}
-      <LimitsCard maxStackHeight={state.maxStackHeight} onChange={setMaxStackHeight} />
-      <OrientationsCard orientationFlags={state.orientationFlags} onChange={setOrientationFlag} />
       <PackingModeCard packingMode={state.packingMode} onChange={setPackingMode} />
       <AdditionalElementsCard
         additional={state.additional}
@@ -84,7 +89,7 @@ export function Sidebar({
 
       <div className="row-btns">
         {!templateMode && (
-          <button className="ghost" onClick={onResetExample}>
+          <button className="ghost reset-example-btn" onClick={onResetExample}>
             {t('sidebar.resetExample')}
           </button>
         )}

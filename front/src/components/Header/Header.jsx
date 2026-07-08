@@ -24,6 +24,8 @@ export function Header({
   const { t } = useLang();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const anchorRef = useRef(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
     if (!settingsOpen) return undefined;
@@ -33,6 +35,15 @@ export function Header({
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!userMenuOpen) return undefined;
+    const onDocMouseDown = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [userMenuOpen]);
 
   return (
     <header className="app">
@@ -71,25 +82,42 @@ export function Header({
       <h1>📦 {t('header.title')}</h1>
       <span className="sub">{t('header.subtitle')}</span>
       <span className="spacer"></span>
-      <div className="header-user">
-        <span className="header-username muted">{username}</span>
-        {isAdmin && (
-          <button className="ghost" onClick={onOpenAdmin} title={t('header.adminTitle')}>
-            {t('header.admin')}
-          </button>
-        )}
-        <button className="ghost" onClick={onLogout} title={t('header.signOutTitle')}>
-          {t('header.signOut')}
+      <div className="header-user settingsAnchor" ref={userMenuRef}>
+        <button
+          className="ghost header-username-btn"
+          onClick={() => setUserMenuOpen((o) => !o)}
+          title={username}
+        >
+          <span className="header-username">{username}</span>
+          <span className="header-username-caret">▾</span>
         </button>
+        {userMenuOpen && (
+          <div className="popover user-popover">
+            {isAdmin && (
+              <button
+                className="ghost"
+                onClick={() => {
+                  setUserMenuOpen(false);
+                  onOpenAdmin();
+                }}
+                title={t('header.adminTitle')}
+              >
+                {t('header.admin')}
+              </button>
+            )}
+            <button
+              className="ghost"
+              onClick={() => {
+                setUserMenuOpen(false);
+                onLogout();
+              }}
+              title={t('header.signOutTitle')}
+            >
+              {t('header.signOut')}
+            </button>
+          </div>
+        )}
       </div>
-      <button
-        className="primary"
-        title={t('header.computeTitle')}
-        onClick={onCompute}
-        disabled={isComputing}
-      >
-        {isComputing ? t('header.computing') : t('header.compute')}
-      </button>
     </header>
   );
 }
