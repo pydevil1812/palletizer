@@ -48,6 +48,7 @@ export function Header({
   return (
     <header className="app">
       <div className="settingsAnchor" ref={anchorRef}>
+
         <button
           className="ghost iconbtn"
           title={t('header.settingsTitle')}
@@ -79,7 +80,8 @@ export function Header({
           />
         )}
       </div>
-      <h1>📦 {t('header.title')}</h1>
+      <h1>📦 </h1>
+      <h1>{t('header.title')}</h1>
       <span className="sub">{t('header.subtitle')}</span>
       <span className="spacer"></span>
       <div className="header-user settingsAnchor" ref={userMenuRef}>

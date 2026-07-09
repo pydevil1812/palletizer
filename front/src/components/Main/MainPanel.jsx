@@ -28,10 +28,11 @@ export function MainPanel({
   canvasSideRef,
   leftPanelMode,
   onToggleLeftPanel,
+  onOpenHistory,
 }) {
   return (
     <section className="main">
-      <Toolbar activeTab={activeTab} onTabChange={onTabChange} libWarning={libWarning} />
+      <Toolbar activeTab={activeTab} onTabChange={onTabChange} libWarning={libWarning} onOpenHistory={onOpenHistory} />
 
       <Banner type={bannerType} message={bannerMessage} />
 

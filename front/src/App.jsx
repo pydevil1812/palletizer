@@ -245,7 +245,6 @@ export default function App() {
         onExportPdf={handleExportPdf}
         onExportXlsx={handleExportXlsx}
         onPrint={handlePrint}
-        onOpenHistory={handleOpenHistory}
         theme={theme}
         onToggleTheme={toggleTheme}
         inputMode={inputMode}
@@ -288,6 +287,7 @@ export default function App() {
           topInfo={topInfo}
           sideAxis={sideAxis}
           onSideAxisChange={setSideAxis}
+          onOpenHistory={handleOpenHistory}
           canvasSideRef={canvasSideRef}
           leftPanelMode={leftPanel}
           onToggleLeftPanel={toggleLeftPanel}

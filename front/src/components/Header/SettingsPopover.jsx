@@ -87,13 +87,6 @@ export function SettingsPopover({
       </div>
 
       <div className="popover-section">
-        <h3>{t('settings.history')}</h3>
-        <button className="ghost" onClick={onOpenHistory}>
-          {t('settings.queryHistory')}
-        </button>
-      </div>
-
-      <div className="popover-section">
         <h3>{t('settings.appearance')}</h3>
         <button className="ghost" onClick={onToggleTheme}>
           {theme === 'dark' ? t('settings.lightTheme') : t('settings.darkTheme')}

@@ -1,6 +1,6 @@
 import { useLang } from '../../i18n/LangContext.jsx';
 
-export function Toolbar({ activeTab, onTabChange, libWarning }) {
+export function Toolbar({ activeTab, onTabChange, libWarning, onOpenHistory }) {
   const { t } = useLang();
 
   const TABS = [
@@ -21,6 +21,11 @@ export function Toolbar({ activeTab, onTabChange, libWarning }) {
           ))}
         </div>
         <span className="spacer"></span>
+        <div className="popover-section">
+          <button className="ghost" onClick={onOpenHistory}>
+            {t('settings.queryHistory')}
+          </button>
+        </div>
       </div>
       <div className="libwarn" style={{ display: libWarning ? 'block' : 'none' }}>
         {libWarning}

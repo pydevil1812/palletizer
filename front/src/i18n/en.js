@@ -23,7 +23,7 @@ export const en = {
     exportXlsx: 'Export Excel',
     print: 'Print',
     history: 'History',
-    queryHistory: '🕘 Query history',
+    queryHistory: 'History/Comparison',
     appearance: 'Appearance',
     lightTheme: '☀ Light theme',
     darkTheme: '🌙 Dark theme',
