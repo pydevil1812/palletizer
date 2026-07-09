@@ -113,6 +113,22 @@ details.card[open] summary::before{content:"▾ "}
 .stat .v{font-size:18px; font-weight:680; margin-top:2px}
 .stat .v small{font-size:11px; color:var(--muted); font-weight:500}
 
+.stat-dropdown-toggle{
+  display:block; width:100%; text-align:left; background:transparent; border:none;
+  padding:0; margin:0; font:inherit; color:inherit; cursor:pointer;
+}
+.stat-caret{display:inline-block; font-size:9px; color:var(--muted); transition:transform .15s ease}
+.stat-caret.open{transform:rotate(180deg)}
+.stat-dropdown{
+  position:fixed; z-index:1000;
+  background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:8px 12px;
+  box-shadow:0 12px 28px rgba(0,0,0,.35);
+}
+.stat-dropdown-row{display:flex; align-items:center; justify-content:space-between; gap:14px; white-space:nowrap}
+.stat-dropdown-row + .stat-dropdown-row{margin-top:6px}
+.stat-dropdown-row .k{font-size:11px; color:var(--muted)}
+.stat-dropdown-row .v{font-size:13px; font-weight:650}
+
 .viewwrap{flex:1 1 0; position:relative; min-height:200px; overflow:hidden; background:var(--stagebg)}
 .view{position:absolute; inset:0; display:none}
 .view.active{display:block}
