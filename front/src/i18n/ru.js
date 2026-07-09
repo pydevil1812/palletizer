@@ -113,7 +113,7 @@ export const ru = {
     stats: '{boxes} кор. · {layers} сл. · заполн. {fill}% · {height} мм',
   },
   login: {
-    title: 'Pallet Stacking Studio',
+    title: 'Палеттайзер',
     subtitle: 'короб → схема паллеты · 3D-вращение · экспорт отчёта',
     username: 'Имя пользователя',
     password: 'Пароль',
