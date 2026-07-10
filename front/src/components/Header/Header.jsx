@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SettingsPopover } from './SettingsPopover.jsx';
 import { useLang } from '../../i18n/LangContext.jsx';
+import e2d from '../../styles/e2d.svg';
 
 export function Header({
   onLoad,
@@ -55,7 +56,8 @@ export function Header({
           aria-label={t('header.settingsTitle')}
           onClick={() => setSettingsOpen((o) => !o)}
         >
-          ⚙
+        <img src={e2d} alt="Описание изображения"/>
+
         </button>
         {settingsOpen && (
           <SettingsPopover
@@ -80,7 +82,7 @@ export function Header({
           />
         )}
       </div>
-      <h1>📦 </h1>
+      {/* <h1>📦 </h1> */}
       <h1>{t('header.title')}</h1>
       <span className="sub">{t('header.subtitle')}</span>
       <span className="spacer"></span>
