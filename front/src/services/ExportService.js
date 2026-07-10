@@ -152,8 +152,17 @@ export class ExportService {
       ['Side view', images.side],
     ];
     imgs.forEach(([label, data]) => {
-      if (!data) return;
-      const props = doc.getImageProperties(data);
+      // A lost WebGL context or zero-sized canvas yields "data:," / garbage;
+      // getImageProperties would then throw and abort the whole export, so a
+      // bad capture just drops that one picture instead of the entire PDF.
+      if (!data || !data.startsWith('data:image/')) return;
+      let props;
+      try {
+        props = doc.getImageProperties(data);
+      } catch {
+        return;
+      }
+      if (!props.width || !props.height) return;
       const w = PW - 2 * M;
       const h = (w * props.height) / props.width;
       if (y + h + 24 > doc.internal.pageSize.getHeight() - M) {
@@ -164,8 +173,12 @@ export class ExportService {
       doc.setFontSize(12);
       doc.text(label, M, y);
       y += 8;
-      doc.addImage(data, 'PNG', M, y, w, h);
-      y += h + 22;
+      try {
+        doc.addImage(data, 'PNG', M, y, w, h);
+        y += h + 22;
+      } catch {
+        y += 14;
+      }
     });
 
     doc.addPage();
@@ -225,9 +238,28 @@ export class ExportService {
       <tbody>${boxRows}</tbody></table>`;
   }
 
-  static print(printAreaEl, result, images) {
+  static async print(printAreaEl, result, images) {
     if (!printAreaEl) return;
     printAreaEl.innerHTML = this.buildPrintHtml(result, images);
+    // Data-URL <img> elements still decode asynchronously; calling
+    // window.print() before they finish snapshots the page with blank
+    // pictures. Wait for every image (capped so a broken one can't block
+    // printing forever), then open the dialog.
+    const imgEls = Array.from(printAreaEl.querySelectorAll('img'));
+    const timeout = new Promise((resolve) => setTimeout(resolve, 3000));
+    await Promise.race([
+      Promise.all(
+        imgEls.map((img) =>
+          typeof img.decode === 'function'
+            ? img.decode().catch(() => {})
+            : new Promise((resolve) => {
+                if (img.complete) resolve();
+                else img.onload = img.onerror = resolve;
+              })
+        )
+      ),
+      timeout,
+    ]);
     window.print();
   }
 }
