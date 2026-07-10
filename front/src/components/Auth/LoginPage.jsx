@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLang } from '../../i18n/LangContext.jsx';
+import e2d from '../../styles/e2d.svg';
 
 export function LoginPage({ onLogin }) {
   const { t } = useLang();
@@ -24,7 +25,7 @@ export function LoginPage({ onLogin }) {
   return (
     <div className="auth-overlay">
       <div className="auth-box">
-        <div className="auth-logo">📦</div>
+        <img src={e2d} alt="Описание изображения"/>
         <h1 className="auth-title">{t('login.title')}</h1>
         <p className="auth-sub muted">{t('login.subtitle')}</p>
 
