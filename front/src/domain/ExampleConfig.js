@@ -5,6 +5,7 @@ export const EXAMPLE_CONFIG_JSON = {
   box: { name: 'BOX A', length: 400, width: 300, height: 250, weight: 8.5 },
   pallet: { name: 'Pallet (1200x800)', length: 1200, width: 800, deck_height: 150, load_capacity: 700 },
   max_stack_height: 1800,
+  packing_mode: 'auto',
   orientation_flags: { allow_rotate_x: false, allow_rotate_y: false, allow_rotate_z: true },
   additional_elements: {
     enabled: false,

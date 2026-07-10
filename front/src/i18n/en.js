@@ -188,6 +188,8 @@ export const en = {
   },
   packingMode: {
     title: 'Stacking mode',
+    auto: 'Auto',
+    autoHint: 'both patterns are computed and the one with more boxes wins; spiral wins ties',
     standard: 'Standard',
     standardHint: 'maximum boxes per layer, gaps collected near the walls',
     spiral: 'Spiral',

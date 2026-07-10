@@ -1,6 +1,6 @@
 import { useLang } from '../../i18n/LangContext.jsx';
 
-const MODES = ['standard', 'spiral'];
+const MODES = ['auto', 'standard', 'spiral'];
 
 export function PackingModeCard({ packingMode, onChange }) {
   const { t } = useLang();

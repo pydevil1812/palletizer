@@ -12,6 +12,6 @@ export class PalletConfig {
       orientationFlags instanceof OrientationFlags ? orientationFlags : new OrientationFlags(orientationFlags);
     this.additional =
       additional instanceof AdditionalElements ? additional : new AdditionalElements(additional);
-    this.packingMode = packingMode === 'spiral' ? 'spiral' : 'standard';
+    this.packingMode = ['standard', 'spiral'].includes(packingMode) ? packingMode : 'auto';
   }
 }

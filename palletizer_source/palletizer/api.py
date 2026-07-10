@@ -77,8 +77,8 @@ def build_config(data: Dict) -> StackingConfig:
         film_weight_kg=_num(a.get("film_weight_kg")),
     )
     packing_mode = data.get("packing_mode")
-    if packing_mode not in ("standard", "spiral"):
-        packing_mode = "standard"
+    if packing_mode not in ("standard", "spiral", "auto"):
+        packing_mode = "auto"
     return StackingConfig(
         box=box,
         pallet=pallet,

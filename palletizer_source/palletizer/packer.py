@@ -25,7 +25,7 @@ Two stages:
      (tiny box on a huge pallet) it falls back to the strip DP, so worst-
      case behaviour never regresses below the historical algorithm.
 
-     Stage 1 has two modes (`StackingConfig.packing_mode`):
+     Stage 1 has two packing patterns (`StackingConfig.packing_mode`):
 
        * "standard" — the two solvers above, maximizing box count. Gaps
          end up collected near the container walls.
@@ -39,6 +39,9 @@ Two stages:
          alternate chirality (mirrored every other layer) so the vertical
          seams interlock like brickwork.
 
+     A third mode, "auto", runs the full stacking once per pattern and
+     returns the result with more boxes (spiral wins ties).
+
   2. `stack_layers` repeatedly calls stage 1 for every allowed box
      orientation, picks the orientation that yields the most boxes for
      the height/weight budget remaining, and stacks layers until the
@@ -47,6 +50,7 @@ Two stages:
 from __future__ import annotations
 
 import bisect
+from dataclasses import replace
 from typing import Dict, List, Optional, Tuple
 
 from .models import (
@@ -393,6 +397,13 @@ def _fixed_additional_weight(additional: Optional[AdditionalElements]) -> float:
 
 
 def stack_layers(config: StackingConfig) -> StackingResult:
+    if config.packing_mode == "auto":
+        # Compute both patterns for the whole stack and keep the one with
+        # more boxes; on a tie the spiral pattern wins (better stability).
+        standard = stack_layers(replace(config, packing_mode="standard"))
+        spiral = stack_layers(replace(config, packing_mode="spiral"))
+        return spiral if spiral.total_boxes >= standard.total_boxes else standard
+
     box, pallet = config.box, config.pallet
     orientations = generate_orientations(box, config.orientation_flags)
     additional = config.additional
