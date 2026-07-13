@@ -34,17 +34,6 @@ export class AuthService {
     return body;
   }
 
-  static async register(username, password) {
-    const res = await fetch(`${BASE}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || 'Registration failed');
-    return body;
-  }
-
   static async logout() {
     const token = AuthService.getToken();
     if (token) {

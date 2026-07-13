@@ -10,10 +10,6 @@ export function useAuth() {
     return data;
   }, []);
 
-  const register = useCallback(async (username, password) => {
-    return AuthService.register(username, password);
-  }, []);
-
   const logout = useCallback(async () => {
     await AuthService.logout();
     setSession(null);
@@ -24,7 +20,6 @@ export function useAuth() {
     isLoggedIn: !!session,
     isAdmin: session?.role === 'admin',
     login,
-    register,
     logout,
   };
 }
